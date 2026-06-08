@@ -149,7 +149,8 @@ code { font-family: 'JetBrains Mono', 'SF Mono', Consolas, monospace; font-size:
   margin-bottom: 8px;
 }
 
-input[type=text], input[type=number], textarea, select {
+input[type=text], input[type=number], input[type=password], input[type=email],
+input[type=search], input[type=url], textarea, select {
   width: 100%;
   background: var(--bg-2);
   color: var(--ink);
@@ -160,10 +161,32 @@ input[type=text], input[type=number], textarea, select {
   font-family: inherit;
   outline: none;
   transition: border-color 0.15s, background 0.15s;
+  -webkit-appearance: none;
+  appearance: none;
 }
-input[type=text]:focus, input[type=number]:focus, textarea:focus, select:focus {
+input[type=text]:focus, input[type=number]:focus, input[type=password]:focus,
+input[type=email]:focus, input[type=search]:focus, input[type=url]:focus,
+textarea:focus, select:focus {
   border-color: var(--accent-2);
   background: var(--surface);
+}
+input::placeholder, textarea::placeholder { color: var(--muted); }
+
+/* Chrome / Edge / Safari force a white autofill background — override it */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-text-fill-color: var(--ink) !important;
+  -webkit-box-shadow: 0 0 0 1000px var(--bg-2) inset !important;
+  caret-color: var(--ink) !important;
+  border: 1px solid var(--line) !important;
+  transition: background-color 5000s ease-in-out 0s;
+  font-family: inherit !important;
+}
+input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px var(--surface) inset !important;
+  border-color: var(--accent-2) !important;
 }
 input[type=color] {
   width: 100%; height: 40px;
