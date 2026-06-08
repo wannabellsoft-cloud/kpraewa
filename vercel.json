@@ -6,7 +6,8 @@
     { "source": "/widget", "destination": "/widget.html" },
     { "source": "/widget/login", "destination": "/widget-login.html" },
     { "source": "/overlay", "destination": "/overlay.html" },
-    { "source": "/jar", "destination": "/jar.html" }
+    { "source": "/jar", "destination": "/jar.html" },
+    { "source": "/api/(.*)", "destination": "/api/[...all]" }
   ],
   "functions": {
     "api/[...all].js": {
