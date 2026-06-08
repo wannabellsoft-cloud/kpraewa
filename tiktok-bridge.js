@@ -22,7 +22,8 @@ const {
   AlreadyConnectingError,
   AlreadyConnectedError,
   SignatureRateLimitError,
-  SignatureMissingTokensError
+  SignatureMissingTokensError,
+  getPreferredPictureFormat
 } = require('tiktok-live-connector');
 
 // ---------- args / env ----------
@@ -116,12 +117,55 @@ async function postGift(payload) {
 let conn = null;
 let reconnectTimer = null;
 
+// Walk a few likely paths to find a TikTok picture URL.
+// Uses the connector's helper which knows how to pick the best format
+// out of a TikTok protobuf url list.
+function pickUrl(imgObj) {
+  if (!imgObj) return null;
+  try {
+    if (typeof getPreferredPictureFormat === 'function') {
+      const u = getPreferredPictureFormat(imgObj);
+      if (u) return u;
+    }
+  } catch {}
+  // Manual fallbacks for various shapes
+  return (
+    imgObj?.urlList?.[0]    // simplified protobuf
+    || imgObj?.url_list?.[0]
+    || imgObj?.urls?.[0]
+    || imgObj?.giftPictureUrl
+    || imgObj?.url
+    || imgObj?.uri
+    || null
+  );
+}
+
 function extractGift(data) {
   const name = data.giftDetails?.giftName
             || data.gift?.giftName
             || data.gift?.name
             || data.giftName
             || `Gift#${data.giftId || '?'}`;
+
+  // Try every known place TikTok stuffs the gift image
+  const giftPictureUrl =
+       pickUrl(data.giftDetails?.image)
+    || pickUrl(data.giftDetails?.giftImage)
+    || pickUrl(data.giftDetails?.icon)
+    || pickUrl(data.gift?.image)
+    || pickUrl(data.gift?.giftImage)
+    || pickUrl(data.gift?.icon)
+    || pickUrl(data.giftImage)
+    || data.giftPictureUrl
+    || null;
+
+  const profilePictureUrl =
+       pickUrl(data.user?.profilePicture)
+    || pickUrl(data.user?.avatarThumb)
+    || pickUrl(data.profilePicture)
+    || data.profilePictureUrl
+    || null;
+
   return {
     giftName: name,
     giftType: String(name).toLowerCase(),
@@ -133,17 +177,8 @@ function extractGift(data) {
       || 0,
     uniqueId: data.user?.uniqueId || data.uniqueId || 'anon',
     nickname: data.user?.nickname || data.nickname || data.uniqueId || 'Someone',
-    giftPictureUrl:
-      data.giftDetails?.giftImage?.giftPictureUrl
-      || data.giftDetails?.image?.url
-      || data.gift?.image?.url
-      || data.giftPictureUrl
-      || null,
-    profilePictureUrl:
-      data.user?.profilePicture?.urls?.[0]
-      || data.profilePicture?.urls?.[0]
-      || data.profilePictureUrl
-      || null
+    giftPictureUrl,
+    profilePictureUrl
   };
 }
 
@@ -189,7 +224,13 @@ async function start() {
     if (data.giftType === 1 && !data.repeatEnd) return;
 
     const payload = extractGift(data);
-    log(`Gift received: ${payload.nickname} sent ${payload.giftName} ×${payload.repeatCount}`);
+    log(`Gift received: ${payload.nickname} sent ${payload.giftName} ×${payload.repeatCount}` +
+        (payload.giftPictureUrl ? '  [image OK]' : '  [no image url]'));
+    if (opts.verbose && !payload.giftPictureUrl) {
+      // Help diagnose what keys are present so we can map them
+      console.log('  giftDetails keys:', Object.keys(data.giftDetails || {}).slice(0, 12));
+      console.log('  data keys:', Object.keys(data).filter(k => /gift|image|icon/i.test(k)).slice(0, 12));
+    }
     postGift(payload).catch(e => warn('post failed:', e.message));
   });
 

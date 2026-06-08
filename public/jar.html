@@ -93,24 +93,41 @@
   /* Each gift floating down */
   .gift {
     position: absolute;
-    width: 56px; height: 56px;
+    width: 60px; height: 60px;
     display: flex; align-items: center; justify-content: center;
-    border-radius: 50%;
+    border-radius: 14px;
     font-weight: 700;
     color: #1a1416;
     font-size: 22px;
     box-shadow:
-      inset 0 -8px 16px rgba(0,0,0,0.18),
-      inset 0 4px 8px rgba(255,255,255,0.4),
-      0 4px 14px rgba(0,0,0,0.25);
+      inset 0 -6px 14px rgba(0,0,0,0.15),
+      inset 0 3px 6px rgba(255,255,255,0.35),
+      0 4px 14px rgba(0,0,0,0.3);
     will-change: transform, opacity;
     user-select: none;
+    overflow: hidden;
   }
-  .gift img { width: 80%; height: 80%; object-fit: contain; border-radius: 50%; }
-  .gift.combo-2 { width: 64px; height: 64px; font-size: 24px; }
-  .gift.combo-5 { width: 72px; height: 72px; font-size: 26px; }
-  .gift.combo-10 { width: 84px; height: 84px; font-size: 30px; }
-  .gift.combo-50 { width: 100px; height: 100px; font-size: 36px; }
+  /* When a TikTok gift image URL exists we go transparent — let the image be the gift */
+  .gift.has-image {
+    background: transparent !important;
+    border-radius: 12px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+  }
+  .gift.has-image img {
+    width: 100%; height: 100%;
+    object-fit: contain;
+    border-radius: 0;
+    display: block;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
+  }
+  /* Fallback glyph (when no TikTok image) */
+  .gift.no-image {
+    color: rgba(0,0,0,0.55);
+  }
+  .gift.combo-2  { width: 68px; height: 68px; font-size: 24px; }
+  .gift.combo-5  { width: 78px; height: 78px; font-size: 26px; }
+  .gift.combo-10 { width: 92px; height: 92px; font-size: 30px; }
+  .gift.combo-50 { width: 108px; height: 108px; font-size: 36px; }
 
   /* falling animation — quick drop + bounce */
   @keyframes fall {
@@ -346,13 +363,23 @@
     const s = styleFor(gift.giftType || gift.giftName);
     const el = document.createElement('div');
     el.className = 'gift falling ' + pickComboClass(gift.repeatCount);
-    el.style.background = s.bg;
     if (gift.giftPictureUrl) {
+      el.classList.add('has-image');
       const img = document.createElement('img');
       img.src = gift.giftPictureUrl;
-      img.onerror = () => { img.remove(); el.textContent = s.glyph; };
+      img.alt = gift.giftName || '';
+      img.onerror = () => {
+        // Image failed → fall back to colored circle with glyph
+        img.remove();
+        el.classList.remove('has-image');
+        el.classList.add('no-image');
+        el.style.background = s.bg;
+        el.textContent = s.glyph;
+      };
       el.appendChild(img);
     } else {
+      el.classList.add('no-image');
+      el.style.background = s.bg;
       el.textContent = s.glyph;
     }
 
