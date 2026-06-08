@@ -122,6 +122,8 @@ async function postGift(payload) {
 let conn = null;
 let reconnectTimer = null;
 const dumpedSampleForName = new Set(); // gift names whose raw JSON we've dumped once
+let lastDisconnectAt = null;            // for new-session auto-clear
+let lastRoomId = null;
 
 // Coerce anything (string / array / CSV / object with urls) into a single clean URL.
 function coerceUrl(v) {
@@ -283,13 +285,33 @@ async function start() {
   }
   conn = new TikTokLiveConnection(handle, connOpts);
 
-  conn.on(ControlEvent.CONNECTED, state => {
+  conn.on(ControlEvent.CONNECTED, async state => {
     ok(`Connected to TikTok Live ${handle}  room=${state?.roomId || '?'}`);
     const giftCount = state?.availableGifts?.length || conn?.availableGifts?.length || 0;
     if (giftCount) ok(`Loaded ${giftCount} gifts in the TikTok catalog.`);
+
+    // Auto-clear jar when this looks like a brand-new live session:
+    //   - A long gap (>30 min) since the last disconnect, OR
+    //   - The TikTok roomId has changed since the last connection.
+    const NEW_SESSION_GAP_MS = 30 * 60 * 1000;
+    const gapMs = lastDisconnectAt ? Date.now() - lastDisconnectAt : 0;
+    const roomChanged = lastRoomId && state?.roomId && state.roomId !== lastRoomId;
+    if ((lastDisconnectAt && gapMs > NEW_SESSION_GAP_MS) || roomChanged) {
+      log(`New live session detected (gap=${Math.round(gapMs/60000)}m, roomChanged=${!!roomChanged}). Clearing jar…`);
+      try {
+        await fetch(opts.api + '/api/jar/clear', {
+          method: 'POST',
+          headers: { Cookie: SESSION_COOKIE, 'Content-Type': 'application/json' }
+        });
+      } catch (e) { warn('auto-clear failed:', e.message); }
+    }
+    lastRoomId = state?.roomId || lastRoomId;
     log('Waiting for gifts…');
   });
-  conn.on(ControlEvent.DISCONNECTED, () => warn('Disconnected from TikTok'));
+  conn.on(ControlEvent.DISCONNECTED, () => {
+    warn('Disconnected from TikTok');
+    lastDisconnectAt = Date.now();
+  });
   conn.on(ControlEvent.ERROR, e => warn('TikTok error:', e?.message || e));
 
   conn.on(WebcastEvent.STREAM_END, () => {

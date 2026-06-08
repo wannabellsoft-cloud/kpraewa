@@ -544,13 +544,17 @@
     return '';
   }
 
-  function placeGift(gift) {
+  function placeGift(gift, silent = false) {
     const w = jarContent.clientWidth;
     const h = jarContent.clientHeight;
     const repeat = Math.max(1, gift.repeatCount || 1);
     const drops = Math.min(repeat, 12);
+    if (silent) {
+      for (let i = 0; i < drops; i++) spawnGift(gift, w, h, true);
+      return;
+    }
     for (let i = 0; i < drops; i++) {
-      setTimeout(() => spawnGift(gift, w, h), i * 90);
+      setTimeout(() => spawnGift(gift, w, h, false), i * 90);
     }
     if (repeat >= 5) {
       const flash = document.createElement('div');
@@ -564,10 +568,11 @@
     }
   }
 
-  function spawnGift(gift, w, h) {
+  function spawnGift(gift, w, h, silent = false) {
     const s = styleFor(gift.giftType || gift.giftName);
     const el = document.createElement('div');
-    el.className = 'gift falling ' + pickComboClass(gift.repeatCount) + ' ' + pickTierClass(gift.diamondCount || 0);
+    el.className = 'gift ' + (silent ? '' : 'falling ') +
+                   pickComboClass(gift.repeatCount) + ' ' + pickTierClass(gift.diamondCount || 0);
     if (gift.giftPictureUrl) {
       el.classList.add('has-image');
       const img = document.createElement('img');
@@ -629,14 +634,21 @@
     el.style.setProperty('--land-r', landR + 'deg');
     el.style.setProperty('--fall-dur', (1.1 + Math.random() * 0.6) + 's');
 
+    if (silent) {
+      // Replay path — appear directly in the rested position, no fall animation
+      el.style.transform = `translateY(${landY}px) rotate(${landR}deg)`;
+    }
+
     jarContent.appendChild(el);
 
-    // Persist the final transform inline BEFORE removing .falling, otherwise
-    // the keyframe-driven transform reverts and the gift snaps back to top.
-    el.addEventListener('animationend', () => {
-      el.style.transform = `translateY(${landY}px) rotate(${landR}deg)`;
-      el.classList.remove('falling');
-    }, { once: true });
+    if (!silent) {
+      // Persist the final transform inline BEFORE removing .falling, otherwise
+      // the keyframe-driven transform reverts and the gift snaps back to top.
+      el.addEventListener('animationend', () => {
+        el.style.transform = `translateY(${landY}px) rotate(${landR}deg)`;
+        el.classList.remove('falling');
+      }, { once: true });
+    }
 
     const MAX = 80;
     while (jarContent.childElementCount > MAX) jarContent.firstElementChild.remove();
@@ -664,13 +676,38 @@
     return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
 
+  // ===== Persistence (localStorage) =====
+  // The jar keeps its contents across page refreshes / OBS scene reloads,
+  // and only clears when (a) /api/jar/clear is hit, or (b) the bridge
+  // detects a long gap and emits clear automatically.
+  const STORAGE_KEY = 'kpraewa.jar.v1';
+  let recentGifts = [];
+
+  function saveState() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(recentGifts.slice(-50)));
+    } catch {}
+  }
+  function loadState() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      const list = raw ? JSON.parse(raw) : [];
+      return Array.isArray(list) ? list : [];
+    } catch { return []; }
+  }
+
   function onGift(gift) {
-    // Filter: skip gifts below minDiamonds
+    // Client-side belt+braces (server already filters)
     const min = SETTINGS?.jar?.minDiamonds || 0;
-    if (min > 0 && (gift.diamondCount || 0) < min) {
-      console.log('[Jar] skip — gift below minDiamonds', gift.giftName, gift.diamondCount, '<', min);
+    const total = (gift.diamondCount || 0) * (gift.repeatCount || 1);
+    if (min > 0 && total < min && !gift.test) {
+      console.log('[Jar] skip — gift below minDiamonds', gift.giftName, total, '<', min);
       return;
     }
+    recentGifts.push(gift);
+    if (recentGifts.length > 50) recentGifts.shift();
+    saveState();
+
     giftTotal += (gift.repeatCount || 1);
     diamondTotal += (gift.diamondCount || 0) * (gift.repeatCount || 1);
     countEl.textContent = giftTotal.toLocaleString();
@@ -685,6 +722,22 @@
     countEl.textContent = '0';
     diamondEl.textContent = '0';
     latestBox.classList.remove('show');
+    recentGifts = [];
+    try { localStorage.removeItem(STORAGE_KEY); } catch {}
+  }
+
+  function replayStoredGifts() {
+    const list = loadState();
+    if (!list.length) return;
+    recentGifts = list;
+    for (const g of list) {
+      giftTotal += (g.repeatCount || 1);
+      diamondTotal += (g.diamondCount || 0) * (g.repeatCount || 1);
+      placeGift(g, /* silent */ true);
+    }
+    countEl.textContent = giftTotal.toLocaleString();
+    diamondEl.textContent = diamondTotal.toLocaleString();
+    console.log(`[Jar] restored ${list.length} gifts from previous session`);
   }
 
   const status = document.getElementById('rtStatus');
@@ -705,7 +758,10 @@
     setStatus('● realtime FAILED — check console', 'rgba(180,40,40,0.8)');
   });
 
-  fetch('/api/settings').then(r => r.json()).then(applyJarSettings);
+  fetch('/api/settings')
+    .then(r => r.json())
+    .then(s => { applyJarSettings(s); replayStoredGifts(); })
+    .catch(() => replayStoredGifts());
 </script>
 </body>
 </html>
