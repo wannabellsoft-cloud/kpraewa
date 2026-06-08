@@ -1,34 +1,52 @@
 #!/usr/bin/env node
 /**
- * tiktok-bridge.js — forwards TikTok Live gift events to the donate-kpraewa
- * API so they show up inside the /jar overlay.
+ * tiktok-bridge.js — forwards TikTok Live gifts to the donate-kpraewa API.
  *
- * Usage:
- *   node tiktok-bridge.js @k.praewa
+ *   node tiktok-bridge.js @k.praewa --pass MyPass
  *   node tiktok-bridge.js @k.praewa --api https://kpraewa.vercel.app --user Admin --pass MyPass
+ *   node tiktok-bridge.js @k.praewa --pass MyPass --verbose
  *
- * Reads --user / --pass from CLI or BRIDGE_USER / BRIDGE_PASS env vars.
- * On Vercel deployments, --api defaults to https://kpraewa.vercel.app.
+ * Flags:
+ *   --api <url>     API base URL (default https://kpraewa.vercel.app)
+ *   --user <name>   Admin username (default 'Admin' or BRIDGE_USER env)
+ *   --pass <pass>   Admin password (or BRIDGE_PASS env)
+ *   --verbose       Log every event TikTok sends (chats, likes, joins…)
+ *   --raw           Log the raw gift JSON when one arrives
  */
 
-const { TikTokLiveConnection } = require('tiktok-live-connector');
+const {
+  TikTokLiveConnection,
+  WebcastEvent,
+  ControlEvent,
+  UserOfflineError,
+  AlreadyConnectingError,
+  AlreadyConnectedError,
+  SignatureRateLimitError,
+  SignatureMissingTokensError
+} = require('tiktok-live-connector');
 
-// --- args ---
+// ---------- args ----------
 const argv = process.argv.slice(2);
 let handle = null;
-const opts = { api: process.env.BRIDGE_API || 'https://kpraewa.vercel.app',
-               user: process.env.BRIDGE_USER || 'Admin',
-               pass: process.env.BRIDGE_PASS || '' };
+const opts = {
+  api: (process.env.BRIDGE_API || 'https://kpraewa.vercel.app').replace(/\/$/, ''),
+  user: process.env.BRIDGE_USER || 'Admin',
+  pass: process.env.BRIDGE_PASS || '',
+  verbose: false,
+  raw: false
+};
 for (let i = 0; i < argv.length; i++) {
   const a = argv[i];
-  if (a.startsWith('--api'))   opts.api  = a.includes('=') ? a.split('=')[1] : argv[++i];
-  else if (a.startsWith('--user')) opts.user = a.includes('=') ? a.split('=')[1] : argv[++i];
-  else if (a.startsWith('--pass')) opts.pass = a.includes('=') ? a.split('=')[1] : argv[++i];
+  const val = () => (a.includes('=') ? a.split('=').slice(1).join('=') : argv[++i]);
+  if (a.startsWith('--api'))   opts.api  = val().replace(/\/$/, '');
+  else if (a.startsWith('--user'))    opts.user = val();
+  else if (a.startsWith('--pass'))    opts.pass = val();
+  else if (a === '--verbose' || a === '-v') opts.verbose = true;
+  else if (a === '--raw')               opts.raw = true;
   else if (!handle) handle = a;
 }
-
 if (!handle) {
-  console.error('Usage: node tiktok-bridge.js @username [--api URL] [--user U] [--pass P]');
+  console.error('Usage: node tiktok-bridge.js @username --pass YOUR_PASS [--api URL] [--user U] [--verbose] [--raw]');
   process.exit(1);
 }
 if (!opts.pass) {
@@ -36,33 +54,39 @@ if (!opts.pass) {
   process.exit(1);
 }
 handle = handle.startsWith('@') ? handle : '@' + handle;
-opts.api = opts.api.replace(/\/$/, '');
 
-const log = (...m) => console.log(new Date().toLocaleTimeString(), ...m);
-const warn = (...m) => console.warn(new Date().toLocaleTimeString(), ...m);
+const ts = () => new Date().toLocaleTimeString();
+const log  = (...m) => console.log(`[${ts()}]`, ...m);
+const warn = (...m) => console.warn(`[${ts()}] !`, ...m);
+const ok   = (...m) => console.log(`[${ts()}] OK`, ...m);
+const err  = (...m) => console.error(`[${ts()}] X`, ...m);
 
-// --- login to API, keep session cookie ---
+log(`Bridge starting — target ${handle}, api ${opts.api}`);
+
+// ---------- API session ----------
 let SESSION_COOKIE = '';
+let consecutivePostFails = 0;
 
 async function login() {
+  log(`Logging in as "${opts.user}"…`);
   const r = await fetch(opts.api + '/api/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ user: opts.user, pass: opts.pass })
   });
   if (!r.ok) {
-    const txt = await r.text().catch(() => '');
-    throw new Error(`login HTTP ${r.status}: ${txt.slice(0, 200)}`);
+    const body = await r.text().catch(() => '');
+    throw new Error(`HTTP ${r.status}: ${body.slice(0, 200)}`);
   }
   const setCookie = r.headers.get('set-cookie') || '';
   const m = setCookie.match(/wgsess=[^;]+/);
   if (!m) throw new Error('login OK but no session cookie returned');
   SESSION_COOKIE = m[0];
-  log(`Logged in to ${opts.api}`);
+  ok(`Logged in. Session cookie acquired.`);
 }
 
 async function postGift(payload) {
-  if (!SESSION_COOKIE) { warn('No session — re-login'); await login(); }
+  if (!SESSION_COOKIE) await login();
   const r = await fetch(opts.api + '/api/jar/gift', {
     method: 'POST',
     headers: {
@@ -77,52 +101,146 @@ async function postGift(payload) {
     await login();
     return postGift(payload);
   }
-  if (!r.ok) warn(`gift POST ${r.status}: ${(await r.text().catch(()=>'')).slice(0,120)}`);
+  if (!r.ok) {
+    consecutivePostFails++;
+    const txt = (await r.text().catch(() => '')).slice(0, 200);
+    warn(`gift POST ${r.status}: ${txt}`);
+    return;
+  }
+  consecutivePostFails = 0;
+  ok(`> Forwarded ${payload.giftName} ×${payload.repeatCount} from ${payload.nickname}`);
 }
 
-// --- Connect to TikTok Live ---
-let conn;
+// ---------- TikTok Live ----------
+let conn = null;
+let reconnectTimer = null;
+
+function extractGift(data) {
+  const name = data.giftDetails?.giftName
+            || data.gift?.giftName
+            || data.gift?.name
+            || data.giftName
+            || `Gift#${data.giftId || '?'}`;
+  return {
+    giftName: name,
+    giftType: String(name).toLowerCase(),
+    repeatCount: data.repeatCount || data.combo || 1,
+    diamondCount:
+      data.giftDetails?.diamondCount
+      || data.gift?.diamondCount
+      || data.diamondCount
+      || 0,
+    uniqueId: data.user?.uniqueId || data.uniqueId || 'anon',
+    nickname: data.user?.nickname || data.nickname || data.uniqueId || 'Someone',
+    giftPictureUrl:
+      data.giftDetails?.giftImage?.giftPictureUrl
+      || data.giftDetails?.image?.url
+      || data.gift?.image?.url
+      || data.giftPictureUrl
+      || null,
+    profilePictureUrl:
+      data.user?.profilePicture?.urls?.[0]
+      || data.profilePicture?.urls?.[0]
+      || data.profilePictureUrl
+      || null
+  };
+}
+
 async function start() {
-  await login();
+  try {
+    await login();
+  } catch (e) {
+    err(`Cannot reach API — ${e.message}. Retry in 15s`);
+    setTimeout(start, 15000);
+    return;
+  }
 
   conn = new TikTokLiveConnection(handle);
 
-  conn.on('connected', state => {
-    log(`Connected to TikTok Live ${handle} (room ${state?.roomId || '?'})`);
+  conn.on(ControlEvent.CONNECTED, state => {
+    ok(`Connected to TikTok Live ${handle}  room=${state?.roomId || '?'}`);
+    log('Waiting for gifts…');
+  });
+  conn.on(ControlEvent.DISCONNECTED, () => warn('Disconnected from TikTok'));
+  conn.on(ControlEvent.ERROR, e => warn('TikTok error:', e?.message || e));
+
+  conn.on(WebcastEvent.STREAM_END, () => {
+    warn('Stream ended. Will keep listening; reconnect on next live.');
+    scheduleReconnect(60_000);
   });
 
-  conn.on('disconnected', () => warn('Disconnected from TikTok'));
-  conn.on('error', err => warn('TikTok error:', err?.message || err));
-  conn.on('streamEnd', () => warn('Stream ended'));
+  // Verbose: log every event so user can confirm the socket is alive
+  if (opts.verbose) {
+    const allEvents = Object.values(WebcastEvent);
+    for (const ev of allEvents) {
+      conn.on(ev, data => {
+        const who = data?.user?.uniqueId || data?.uniqueId || '';
+        log(`[event ${ev}]`, who);
+      });
+    }
+  }
 
-  conn.on('gift', data => {
-    // TikTok combos: events fire for each unit, but `repeatEnd: false`
-    // means the combo isn't finished — wait until repeatEnd=true to
-    // avoid double-counting. (Non-combo gifts have repeatEnd: true.)
+  conn.on(WebcastEvent.GIFT, data => {
+    if (opts.raw) console.log('RAW GIFT:', JSON.stringify(data, null, 2).slice(0, 800));
+
+    // For combo-able gifts (giftType === 1), TikTok sends one event per tick
+    // but only the one with repeatEnd:true represents the final count.
     if (data.giftType === 1 && !data.repeatEnd) return;
-    const payload = {
-      giftName: data.giftDetails?.giftName || data.giftName || 'Gift',
-      giftType: (data.giftDetails?.giftName || data.giftName || 'gift').toLowerCase(),
-      repeatCount: data.repeatCount || 1,
-      diamondCount: data.giftDetails?.diamondCount || data.diamondCount || 0,
-      uniqueId: data.user?.uniqueId || data.uniqueId || 'anon',
-      nickname: data.user?.nickname || data.nickname || data.uniqueId || 'Someone',
-      giftPictureUrl: data.giftDetails?.giftImage?.giftPictureUrl
-        || data.giftPictureUrl || null,
-      profilePictureUrl: data.user?.profilePicture?.urls?.[0]
-        || data.profilePictureUrl || null
-    };
-    log(`${payload.nickname} sent ${payload.giftName} ×${payload.repeatCount}`);
+
+    const payload = extractGift(data);
+    log(`Gift received: ${payload.nickname} sent ${payload.giftName} ×${payload.repeatCount}`);
     postGift(payload).catch(e => warn('post failed:', e.message));
   });
 
-  conn.connect().catch(async err => {
-    warn(`Connect failed: ${err?.message || err}`);
-    warn('Retry in 30s…');
-    setTimeout(start, 30000);
-  });
+  log(`Connecting to TikTok Live ${handle}…`);
+  try {
+    const state = await conn.connect();
+    // Some versions fire 'connected' here, some via event above. State has roomId.
+    if (state?.roomId) log(`Joined room ${state.roomId}`);
+  } catch (e) {
+    handleConnectError(e);
+  }
+}
+
+function handleConnectError(e) {
+  if (e instanceof UserOfflineError) {
+    warn(`@${handle.replace('@','')} is NOT live right now. Will retry every 60s.`);
+    scheduleReconnect(60_000);
+    return;
+  }
+  if (e instanceof SignatureRateLimitError) {
+    warn('TikTok signing service rate-limited us. Retry in 90s.');
+    scheduleReconnect(90_000);
+    return;
+  }
+  if (e instanceof SignatureMissingTokensError) {
+    err('TikTok signing service rejected. (The free service may be temporarily down.) Retry in 90s.');
+    scheduleReconnect(90_000);
+    return;
+  }
+  if (e instanceof AlreadyConnectingError || e instanceof AlreadyConnectedError) {
+    warn('Already connecting/connected — skipping.');
+    return;
+  }
+  err(`Connect failed: ${e?.message || e}`);
+  scheduleReconnect(30_000);
+}
+
+function scheduleReconnect(ms) {
+  clearTimeout(reconnectTimer);
+  log(`Reconnect in ${Math.round(ms/1000)}s…`);
+  reconnectTimer = setTimeout(() => {
+    try { conn?.disconnect?.(); } catch {}
+    conn = null;
+    start();
+  }, ms);
 }
 
 start();
 
-process.on('SIGINT', () => { log('Shutting down…'); conn?.disconnect(); process.exit(0); });
+// Heartbeat — proves the script is still alive
+setInterval(() => log(`(heartbeat) cookie=${SESSION_COOKIE ? 'yes' : 'NO'} postFails=${consecutivePostFails}`), 60_000);
+
+process.on('SIGINT', () => { log('Shutting down…'); conn?.disconnect?.(); process.exit(0); });
+process.on('uncaughtException', e => err('Uncaught:', e?.message || e));
+process.on('unhandledRejection', e => err('Unhandled rejection:', e?.message || e));
