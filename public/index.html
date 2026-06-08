@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Support · k.praewa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/donor.css" />
+</head>
+<body>
+<div class="petals" aria-hidden="true">
+  <div class="petal p1"></div>
+  <div class="petal p2"></div>
+  <div class="petal p3"></div>
+  <div class="petal p4"></div>
+  <div class="petal p5"></div>
+  <div class="petal p6"></div>
+  <div class="petal p7"></div>
+  <div class="petal p8"></div>
+</div>
+
+<main class="shell">
+  <header class="profile">
+    <div class="avatar-wrap">
+      <div class="avatar-glow"></div>
+      <div class="avatar-ring"></div>
+      <div class="avatar">
+        <span class="initial" id="avatarInitial">P</span>
+        <img id="avatarImg" alt="" style="display:none"
+             onload="this.style.display='block'; document.getElementById('avatarInitial').style.display='none';"
+             onerror="this.remove();" />
+      </div>
+    </div>
+    <div class="profile-handle" id="profileHandle">@k.praewa</div>
+    <h1 class="profile-name" id="profileName">Praewa Klummeesri</h1>
+
+    <div class="profile-socials" id="profileSocials">
+      <a class="profile-social tiktok" id="tiktokLink" href="#" target="_blank" rel="noopener" style="display:none">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5.8 20.1a6.34 6.34 0 0 0 10.86-4.43V8.55a8.16 8.16 0 0 0 4.77 1.52V6.62a4.85 4.85 0 0 1-1.84.07z"/>
+        </svg>
+        <span>TikTok</span>
+      </a>
+      <a class="profile-social instagram" id="instagramLink" href="#" target="_blank" rel="noopener" style="display:none">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+          <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+          <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
+        </svg>
+        <span>Instagram</span>
+      </a>
+    </div>
+  </header>
+
+  <div class="support-banner">
+    <span class="banner-line"></span>
+    <span class="banner-text">Support <em>k.praewa</em></span>
+    <span class="banner-line"></span>
+  </div>
+
+  <div class="step-indicator">
+    <div class="step-meta">
+      <span class="step-counter">Step <strong id="stepNo">01</strong> of 04</span>
+      <span class="step-label" id="stepLabel">Your details</span>
+    </div>
+    <div class="step-track"><div class="step-fill" id="stepFill" style="width:25%"></div></div>
+  </div>
+
+  <!-- ============ STEP 1 ============ -->
+  <section class="panel show" id="panel1">
+    <div class="field">
+      <label class="field-label" for="name">Name</label>
+      <input type="text" id="name" class="field-input" maxlength="30" placeholder="Anonymous" autocomplete="off" />
+    </div>
+
+    <div class="field">
+      <label class="field-label">Amount</label>
+      <div class="amount-display">
+        <input type="number" id="amount" min="1" step="1" inputmode="numeric" placeholder="0" />
+        <span class="currency">THB</span>
+      </div>
+      <div class="amount-quick">
+        <button type="button" class="amount-chip" data-v="20">20</button>
+        <button type="button" class="amount-chip" data-v="50">50</button>
+        <button type="button" class="amount-chip" data-v="100">100</button>
+        <button type="button" class="amount-chip" data-v="200">200</button>
+        <button type="button" class="amount-chip" data-v="500">500</button>
+        <button type="button" class="amount-chip" data-v="1000">1,000</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="field-label" for="message">Message</label>
+      <textarea id="message" class="field-input" maxlength="200" placeholder="Say something on stream..."></textarea>
+      <span class="field-counter"><span id="msgCount">0</span> / 200</span>
+    </div>
+
+    <button class="btn block" id="toStep2Btn">Continue</button>
+  </section>
+
+  <!-- ============ STEP 2 ============ -->
+  <section class="panel" id="panel2">
+    <div class="summary">
+      <div class="summary-row"><span class="key">Name</span><span class="val" id="sumName"></span></div>
+      <div class="summary-row" id="sumMsgRow"><span class="key">Message</span><span class="val" id="sumMsg"></span></div>
+      <div class="summary-row feature"><span class="key">Amount</span><span class="val" id="sumAmt"></span></div>
+    </div>
+
+    <div class="channels">
+      <div class="channel active" data-channel="promptpay">
+        <div class="radio-dot"></div>
+        <div class="meta">
+          <div class="title">PromptPay</div>
+          <div class="desc">Scan with any Thai banking app</div>
+        </div>
+      </div>
+      <div class="channel" data-channel="truewallet">
+        <div class="radio-dot"></div>
+        <div class="meta">
+          <div class="title">TrueMoney Wallet</div>
+          <div class="desc">Pay through the TrueMoney app</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="qr-frame" id="qrFrame">
+      <div class="qr-tag" id="qrTag">PromptPay</div>
+      <img id="qrImg" alt="Payment QR" />
+      <div class="qr-foot">Amount is locked into this code</div>
+    </div>
+
+    <a class="tmn-link" id="openTmnBtn" href="#" style="display:none">Open in TrueMoney app</a>
+
+    <p class="helper-text">
+      Transfer the exact amount shown above.<br>
+      Keep a screenshot of your receipt — you'll need it next.
+    </p>
+
+    <div class="btn-row">
+      <button class="btn btn-ghost" id="backTo1Btn">Back</button>
+      <button class="btn btn-grow" id="toStep3Btn">I have transferred</button>
+    </div>
+  </section>
+
+  <!-- ============ STEP 3 ============ -->
+  <section class="panel" id="panel3">
+    <p style="font-size: 13px; color: var(--ink-2); margin: -8px 0 20px; line-height: 1.6;">
+      Your receipt will be verified against the bank network.
+      The alert appears on stream only after verification.
+    </p>
+
+    <label for="slipFile" class="upload-zone" id="dropZone">
+      <div class="upload-title">Upload your receipt</div>
+      <div class="upload-sub">Drop the image here or click to choose</div>
+      <div class="upload-hint">JPG · PNG · WEBP — up to 8 MB</div>
+    </label>
+    <input type="file" id="slipFile" accept="image/jpeg,image/png,image/webp" />
+    <img id="slipPreview" class="slip-preview" style="display:none" />
+
+    <div class="notice" id="vStatus"></div>
+
+    <div class="btn-row">
+      <button class="btn btn-ghost" id="backTo2Btn">Back</button>
+      <button class="btn btn-ghost" id="newSlipBtn" style="display:none">New file</button>
+      <button class="btn btn-grow" id="verifyBtn" disabled>Verify receipt</button>
+    </div>
+  </section>
+
+  <!-- ============ STEP 4 ============ -->
+  <section class="panel" id="panel4">
+    <div class="success-mark">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 21s-7.5-4.6-9.5-9.5C1.1 8 3.4 4.5 7 4.5c2 0 3.5 1 5 3 1.5-2 3-3 5-3 3.6 0 5.9 3.5 4.5 7C19.5 16.4 12 21 12 21z"
+              fill="currentColor" opacity="0.9"/>
+      </svg>
+    </div>
+    <h2 class="success-title">
+      Thank you<span class="verified-tag">Verified</span>
+    </h2>
+    <p class="success-sub">
+      <strong id="thanksName" style="color: var(--ink);"></strong>, your message<br>
+      is now showing on stream.
+    </p>
+
+    <div class="summary">
+      <div class="summary-row"><span class="key">From</span><span class="val" id="senderInfo">—</span></div>
+      <div class="summary-row feature"><span class="key">Amount</span><span class="val" id="doneAmt"></span></div>
+    </div>
+
+    <button class="btn btn-ghost block" id="restartBtn" style="margin-top: 24px;">Send another</button>
+  </section>
+
+  <footer class="foot">
+    Secured by EasySlip · Powered by PromptPay
+  </footer>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let SETTINGS = {};
+let slipDataUrl = null;
+let currentStep = 1;
+
+const STEP_LABELS = {
+  1: 'Your details',
+  2: 'Transfer',
+  3: 'Verify receipt',
+  4: 'Complete'
+};
+
+async function loadSettings() {
+  SETTINGS = await (await fetch('/api/settings')).json();
+  const s = SETTINGS.streamer || {};
+
+  $('profileHandle').textContent = s.name ? '@' + s.name : '@streamer';
+  $('profileName').textContent = s.displayName || s.name || 'streamer';
+
+  // TikTok pill
+  if (s.tiktokUrl) {
+    $('tiktokLink').href = s.tiktokUrl;
+    $('tiktokLink').style.display = '';
+  }
+  // Instagram pill
+  if (s.instagramUrl) {
+    $('instagramLink').href = s.instagramUrl;
+    $('instagramLink').style.display = '';
+  }
+
+  // Avatar with initial fallback
+  if (s.avatarUrl) {
+    $('avatarImg').src = s.avatarUrl;
+  }
+  const initial = (s.displayName || s.name || 'P').trim().charAt(0).toUpperCase();
+  $('avatarInitial').textContent = initial;
+}
+
+function toast(msg, isErr) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.toggle('err', !!isErr);
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+function gotoStep(n) {
+  currentStep = n;
+  for (let i = 1; i <= 4; i++) {
+    $('panel'+i).classList.toggle('show', i === n);
+  }
+  $('stepNo').textContent = String(n).padStart(2, '0');
+  $('stepLabel').textContent = STEP_LABELS[n];
+  $('stepFill').style.width = (n * 25) + '%';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ---- Step 1 ----
+$('message').addEventListener('input', (e) => $('msgCount').textContent = e.target.value.length);
+$('amount').addEventListener('input', () => {
+  const v = $('amount').value;
+  document.querySelectorAll('.amount-chip').forEach(c => c.classList.toggle('active', c.dataset.v === v));
+});
+document.querySelectorAll('.amount-chip').forEach(b => b.addEventListener('click', () => {
+  $('amount').value = b.dataset.v;
+  document.querySelectorAll('.amount-chip').forEach(c => c.classList.toggle('active', c === b));
+}));
+
+$('toStep2Btn').addEventListener('click', async () => {
+  const amount = Number($('amount').value);
+  if (!Number.isFinite(amount) || amount < 1) {
+    toast('Please enter an amount', true);
+    $('amount').focus();
+    return;
+  }
+  const name = $('name').value.trim() || 'Anonymous';
+  const msg = $('message').value.trim();
+
+  $('sumName').textContent = name;
+  if (msg) {
+    $('sumMsg').textContent = msg;
+    $('sumMsgRow').style.display = '';
+  } else {
+    $('sumMsgRow').style.display = 'none';
+  }
+  $('sumAmt').textContent = amount.toLocaleString() + ' THB';
+
+  await refreshQR(amount);
+  gotoStep(2);
+});
+
+async function refreshQR(amount) {
+  if (!SETTINGS.streamer?.promptpayId) {
+    $('qrFrame').style.display = 'none';
+    return;
+  }
+  try {
+    const r = await fetch(`/api/qr?amount=${amount}`);
+    if (!r.ok) throw new Error();
+    const data = await r.json();
+    $('qrImg').src = data.dataUrl;
+    $('qrFrame').style.display = '';
+    const ppId = (SETTINGS.streamer.promptpayId || '').replace(/\D/g, '');
+    $('openTmnBtn').href = `truemoney://send?mobile=${ppId}&amount=${amount}`;
+  } catch {
+    $('qrFrame').style.display = 'none';
+  }
+}
+
+// ---- Step 2: channels ----
+document.querySelectorAll('.channel').forEach(ch => {
+  ch.addEventListener('click', () => {
+    document.querySelectorAll('.channel').forEach(c => c.classList.toggle('active', c === ch));
+    const channel = ch.dataset.channel;
+    $('qrTag').textContent = channel === 'truewallet' ? 'TrueMoney Wallet' : 'PromptPay';
+    $('openTmnBtn').style.display = channel === 'truewallet' ? '' : 'none';
+  });
+});
+
+$('backTo1Btn').addEventListener('click', () => gotoStep(1));
+$('toStep3Btn').addEventListener('click', () => gotoStep(3));
+
+// ---- Step 3 ----
+$('backTo2Btn').addEventListener('click', () => gotoStep(2));
+
+const dropZone = $('dropZone');
+const slipFile = $('slipFile');
+
+slipFile.addEventListener('change', (e) => handleFile(e.target.files[0]));
+dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('drag'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag'));
+dropZone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dropZone.classList.remove('drag');
+  handleFile(e.dataTransfer.files[0]);
+});
+
+function handleFile(file) {
+  if (!file) return;
+  if (!file.type.startsWith('image/')) { toast('Please choose an image file', true); return; }
+  if (file.size > 8 * 1024 * 1024) { toast('File exceeds 8 MB', true); return; }
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    slipDataUrl = reader.result;
+    $('slipPreview').src = slipDataUrl;
+    $('slipPreview').style.display = 'block';
+    $('verifyBtn').disabled = false;
+    $('vStatus').className = 'notice';
+    $('newSlipBtn').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+$('newSlipBtn').addEventListener('click', () => {
+  slipDataUrl = null;
+  slipFile.value = '';
+  $('slipPreview').style.display = 'none';
+  $('slipPreview').src = '';
+  $('verifyBtn').disabled = true;
+  $('vStatus').className = 'notice';
+  $('newSlipBtn').style.display = 'none';
+});
+
+$('verifyBtn').addEventListener('click', async () => {
+  if (!slipDataUrl) return;
+  const btn = $('verifyBtn');
+  const vs = $('vStatus');
+  btn.disabled = true;
+  vs.className = 'notice show loading';
+  vs.innerHTML = '<div class="spinner-line"></div><div class="notice-title">Verifying receipt</div><div class="notice-hint">Checking against the bank network</div>';
+  $('newSlipBtn').style.display = 'none';
+
+  let data, ok = false;
+  try {
+    const r = await fetch('/api/verify-slip', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        image: slipDataUrl,
+        name: $('name').value.trim() || 'Anonymous',
+        amount: Number($('amount').value),
+        message: $('message').value.trim()
+      })
+    });
+    data = await r.json().catch(() => ({ ok: false, error: 'Server returned an invalid response' }));
+    ok = r.ok && data?.ok;
+  } catch (e) {
+    data = { ok: false, error: 'Could not reach the server' };
+  }
+
+  if (ok) {
+    $('thanksName').textContent = data.donation.name;
+    $('doneAmt').textContent = data.donation.amount.toLocaleString() + ' THB';
+    $('senderInfo').textContent = (data.donation.senderName || '—') +
+      (data.donation.senderBank ? ` · ${data.donation.senderBank}` : '');
+    gotoStep(4);
+    return;
+  }
+
+  const errMsg = data?.error || 'Could not verify receipt';
+  vs.className = 'notice show error';
+  vs.innerHTML = `
+    <div class="notice-title">${escapeHtml(errMsg)}</div>
+    <div class="notice-hint">${data?.duplicate
+      ? 'This receipt has been used before. Please upload a new one.'
+      : 'Check the image and try again, or revisit the previous step.'}</div>
+  `;
+  btn.disabled = false;
+  $('newSlipBtn').style.display = '';
+  vs.scrollIntoView({ behavior: 'smooth', block: 'center' });
+});
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// ---- Step 4 ----
+$('restartBtn').addEventListener('click', () => {
+  $('name').value = '';
+  $('amount').value = '';
+  $('message').value = '';
+  $('msgCount').textContent = '0';
+  $('slipPreview').style.display = 'none';
+  $('slipPreview').src = '';
+  slipDataUrl = null;
+  $('verifyBtn').disabled = true;
+  $('vStatus').className = 'notice';
+  $('newSlipBtn').style.display = 'none';
+  slipFile.value = '';
+  document.querySelectorAll('.amount-chip').forEach(c => c.classList.remove('active'));
+  document.querySelectorAll('.channel').forEach(c => c.classList.toggle('active', c.dataset.channel === 'promptpay'));
+  $('qrTag').textContent = 'PromptPay';
+  $('openTmnBtn').style.display = 'none';
+  gotoStep(1);
+});
+
+loadSettings();
+</script>
+</body>
+</html>

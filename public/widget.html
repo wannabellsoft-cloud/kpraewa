@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Widget Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Sarabun:wght@400;500;600;700&family=Kanit:wght@400;500;600;700&family=Mitr:wght@400;500;600&family=Noto+Sans+Thai:wght@400;500;600&family=Prompt:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/admin.css" />
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">k.praewa<span class="accent">.</span></div>
+  <div class="crumb">Widget Console</div>
+  <div class="actions">
+    <a href="/overlay" target="_blank">Overlay</a>
+  </div>
+</header>
+
+<main class="workspace">
+
+  <!-- LEFT COLUMN -->
+  <div class="col">
+
+    <section class="card">
+      <div class="card-head">
+        <div class="title">Streamer profile</div>
+        <div class="num">01</div>
+      </div>
+
+      <div class="avatar-uploader">
+        <div class="avatar-uploader-preview">
+          <img id="avatarPreview" alt="" />
+          <span id="avatarPreviewFallback">P</span>
+        </div>
+        <div class="avatar-uploader-controls">
+          <label class="field-label" style="margin-bottom: 6px;">Profile photo</label>
+          <p class="hint" style="margin: 0 0 10px;">Square images look best. JPG / PNG / WEBP up to 6 MB.</p>
+          <div style="display: flex; gap: 8px;">
+            <label for="avatarFile" class="btn ghost sm" style="cursor: pointer;">Choose file</label>
+            <button class="btn ghost sm" id="removeAvatarBtn" type="button">Remove</button>
+          </div>
+          <input type="file" id="avatarFile" accept="image/jpeg,image/png,image/webp" style="display:none" />
+          <div id="avatarUploadStatus" class="import-result" style="margin-top: 10px;"></div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="field">
+          <label class="field-label">Handle</label>
+          <input type="text" data-path="streamer.name" placeholder="k.praewa" />
+        </div>
+        <div class="field">
+          <label class="field-label">Display name</label>
+          <input type="text" data-path="streamer.displayName" placeholder="Praewa Klummeesri" />
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="field">
+          <label class="field-label">TikTok URL</label>
+          <input type="text" data-path="streamer.tiktokUrl" placeholder="https://www.tiktok.com/@..." />
+        </div>
+        <div class="field">
+          <label class="field-label">Instagram URL</label>
+          <input type="text" data-path="streamer.instagramUrl" placeholder="https://www.instagram.com/..." />
+        </div>
+      </div>
+
+      <div class="divider-section">
+        <div class="grid-2">
+          <div class="field">
+            <label class="field-label">Bank account</label>
+            <input type="text" data-path="streamer.bankAccount" />
+          </div>
+          <div class="field">
+            <label class="field-label">Account holder</label>
+            <input type="text" data-path="streamer.accountHolder" />
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">PromptPay ID</label>
+        <input type="text" data-path="streamer.promptpayId" placeholder="Mobile · National ID · e-Wallet ID" />
+        <div class="hint">10 digits for mobile, 13 for ID, 15 for e-Wallet ID. Leave blank to disable QR.</div>
+      </div>
+
+      <div class="divider-section">
+        <label class="field-label" style="margin-bottom: 10px;">Import from existing QR</label>
+        <p class="hint" style="margin-top: -2px; margin-bottom: 10px;">
+          Drop a TrueMoney or PromptPay QR image and we'll pull the proxy ID for you.
+        </p>
+        <div class="import-box">
+          <input type="file" id="qrImport" accept="image/*" />
+          <div id="qrImportResult" class="import-result"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <div class="title">Alert appearance</div>
+        <div class="num">02</div>
+      </div>
+
+      <div class="grid-2">
+        <div class="field">
+          <label class="field-label">Background</label>
+          <input type="color" data-path="alert.bgColor" />
+        </div>
+        <div class="field">
+          <label class="field-label">Accent</label>
+          <input type="color" data-path="alert.accentColor" />
+        </div>
+        <div class="field">
+          <label class="field-label">Text</label>
+          <input type="color" data-path="alert.textColor" />
+        </div>
+        <div class="field">
+          <label class="field-label">Amount</label>
+          <input type="color" data-path="alert.amountColor" />
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="field">
+          <label class="field-label">Typeface</label>
+          <select data-path="alert.font">
+            <option>Prompt</option>
+            <option>Kanit</option>
+            <option>Noto Sans Thai</option>
+            <option>Sarabun</option>
+            <option>Mitr</option>
+            <option>Inter</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="field-label">Entrance</label>
+          <select data-path="alert.animation">
+            <option value="slide-up">Slide up</option>
+            <option value="slide-left">Slide from right</option>
+            <option value="fade">Fade</option>
+            <option value="bounce">Bounce</option>
+            <option value="zoom">Zoom</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="field">
+          <div class="range-row">
+            <label class="field-label" style="margin-bottom: 0;">Duration</label>
+            <span class="val"><span id="durLbl">8</span>s</span>
+          </div>
+          <input type="range" min="3" max="20" step="1" data-path="alert.duration" data-mult="1000" id="durRange" />
+        </div>
+        <div class="field">
+          <div class="range-row">
+            <label class="field-label" style="margin-bottom: 0;">Corner radius</label>
+            <span class="val"><span id="brLbl">16</span>px</span>
+          </div>
+          <input type="range" min="0" max="48" step="2" data-path="alert.borderRadius" id="brRange" />
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Title template</label>
+        <input type="text" data-path="alert.titleTemplate" />
+        <div class="hint">Available variables: <code>{name}</code> <code>{amount}</code></div>
+      </div>
+
+      <label class="checkbox">
+        <input type="checkbox" data-path="alert.showMessage" />
+        <span>Show donor message beneath title</span>
+      </label>
+
+      <div class="divider-section">
+        <label class="field-label" style="margin-bottom: 10px;">Alert image or GIF</label>
+        <p class="hint" style="margin-top: -2px; margin-bottom: 10px;">
+          Displays a square thumbnail to the left of the alert text. Use a transparent PNG or animated GIF for the best look.
+        </p>
+        <div class="asset-uploader">
+          <div class="asset-preview" id="alertImgPreviewBox">
+            <img id="alertImgPreview" alt="" />
+            <span id="alertImgPlaceholder">No image</span>
+          </div>
+          <div class="asset-controls">
+            <div style="display: flex; gap: 8px;">
+              <label for="alertImgFile" class="btn ghost sm" style="cursor: pointer;">Choose file</label>
+              <button class="btn ghost sm" id="removeAlertImgBtn" type="button">Remove</button>
+            </div>
+            <input type="file" id="alertImgFile" accept="image/jpeg,image/png,image/webp,image/gif" style="display:none" />
+            <div id="alertImgStatus" class="import-result" style="margin-top: 10px;"></div>
+            <p class="hint" style="margin-top: 8px;">PNG / JPG / WEBP / GIF · up to 8 MB</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- RIGHT COLUMN -->
+  <div class="col">
+
+    <section class="card">
+      <div class="card-head">
+        <div class="title">Live preview</div>
+        <div class="num">03</div>
+      </div>
+      <div class="preview-stage">
+        <div class="alert-preview" id="alertPreview">
+          <div>
+            <div class="title" id="prvTitle"></div>
+            <div class="msg" id="prvMsg">Thanks for the stream tonight.</div>
+          </div>
+        </div>
+      </div>
+      <button class="btn block" id="testBtn" style="margin-top: 14px;">Send test alert</button>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <div class="title">Voice readout</div>
+        <div class="num">04</div>
+      </div>
+
+      <label class="checkbox" style="margin-bottom: 14px;">
+        <input type="checkbox" data-path="tts.enabled" />
+        <span>Read donor message aloud via TTS</span>
+      </label>
+
+      <div class="grid-2">
+        <div class="field">
+          <label class="field-label">Language</label>
+          <select data-path="tts.voice">
+            <option value="th">Thai</option>
+            <option value="en">English</option>
+            <option value="ja">Japanese</option>
+          </select>
+        </div>
+        <div class="field">
+          <div class="range-row">
+            <label class="field-label" style="margin-bottom: 0;">Speed</label>
+            <span class="val"><span id="rateLbl">1.0</span>×</span>
+          </div>
+          <input type="range" min="0.5" max="2" step="0.1" data-path="tts.rate" id="rateRange" />
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Voice template</label>
+        <input type="text" data-path="tts.template" />
+        <div class="hint">Available variables: <code>{name}</code> <code>{amount}</code> <code>{message}</code></div>
+      </div>
+
+      <label class="checkbox">
+        <input type="checkbox" data-path="tts.readMessageOnly" />
+        <span>Read message only (skip prefix)</span>
+      </label>
+
+      <button class="btn ghost block" id="ttsTestBtn" style="margin-top: 14px;">Test voice</button>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <div class="title">Notification sound</div>
+        <div class="num">05</div>
+      </div>
+
+      <label class="checkbox" style="margin-bottom: 14px;">
+        <input type="checkbox" data-path="sound.enabled" />
+        <span>Play sound when an alert fires</span>
+      </label>
+
+      <div class="asset-uploader" style="margin-bottom: 14px;">
+        <div class="asset-preview audio" id="soundPreviewBox">
+          <span id="soundPreviewIcon">♪</span>
+        </div>
+        <div class="asset-controls">
+          <div class="field-label" style="margin-bottom: 6px;">Notification sound</div>
+          <div id="currentSoundLabel" style="font-size: 12px; color: var(--ink-2); margin-bottom: 10px; word-break: break-all;">No sound uploaded</div>
+          <div style="display: flex; gap: 8px;">
+            <label for="soundFile" class="btn ghost sm" style="cursor: pointer;">Choose file</label>
+            <button class="btn ghost sm" id="previewSoundBtn" type="button">Preview</button>
+            <button class="btn ghost sm" id="removeSoundBtn" type="button">Remove</button>
+          </div>
+          <input type="file" id="soundFile" accept="audio/mpeg,audio/mp3,audio/wav,audio/ogg,audio/m4a,audio/x-m4a" style="display:none" />
+          <div id="soundStatus" class="import-result" style="margin-top: 10px;"></div>
+          <p class="hint" style="margin-top: 8px;">MP3 / WAV / OGG / M4A · up to 4 MB</p>
+        </div>
+      </div>
+
+      <div class="field" style="margin-bottom: 0;">
+        <div class="range-row">
+          <label class="field-label" style="margin-bottom: 0;">Volume</label>
+          <span class="val"><span id="volLbl">70</span>%</span>
+        </div>
+        <input type="range" min="0" max="1" step="0.05" data-path="sound.volume" id="volRange" />
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <div class="title">Recent donations</div>
+        <div class="num">06</div>
+      </div>
+      <div class="history" id="histList"></div>
+      <button class="btn ghost danger sm" id="clearHist" style="margin-top: 16px;">Clear history</button>
+    </section>
+
+  </div>
+</main>
+
+<div class="save-bar">
+  <span class="status saved" id="saveStatus">Auto-save enabled</span>
+  <button class="btn ghost sm" onclick="location.reload()">Reload</button>
+  <button class="btn sm" id="saveBtn">Save now</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const $ = (s) => document.querySelector(s);
+let SETTINGS = {};
+const socket = io();
+
+const get = (obj, path) => path.split('.').reduce((a, k) => a?.[k], obj);
+const set = (obj, path, val) => {
+  const ks = path.split('.'); let o = obj;
+  for (let i = 0; i < ks.length - 1; i++) { o[ks[i]] = o[ks[i]] || {}; o = o[ks[i]]; }
+  o[ks.at(-1)] = val;
+};
+
+function bindForm() {
+  document.querySelectorAll('[data-path]').forEach(el => {
+    const path = el.dataset.path;
+    const mult = Number(el.dataset.mult || 1);
+    const raw = get(SETTINGS, path);
+    if (el.type === 'checkbox') el.checked = !!raw;
+    else if (el.type === 'range' && mult !== 1) el.value = (raw || 0) / mult;
+    else el.value = raw ?? '';
+
+    el.addEventListener('input', () => {
+      let val;
+      if (el.type === 'checkbox') val = el.checked;
+      else if (el.type === 'number' || el.type === 'range') val = Number(el.value) * mult;
+      else val = el.value;
+      set(SETTINGS, path, val);
+      updatePreview();
+      updateLabels();
+      scheduleAutoSave();
+    });
+  });
+  updateLabels();
+}
+
+function updateLabels() {
+  $('#durLbl').textContent = (SETTINGS.alert?.duration || 8000) / 1000;
+  $('#brLbl').textContent = SETTINGS.alert?.borderRadius ?? 16;
+  $('#rateLbl').textContent = (SETTINGS.tts?.rate ?? 1).toFixed(1);
+  $('#volLbl').textContent = Math.round((SETTINGS.sound?.volume ?? 0.7) * 100);
+}
+
+function updatePreview() {
+  const a = SETTINGS.alert || {};
+  const box = $('#alertPreview');
+  box.style.background = a.bgColor;
+  box.style.color = a.textColor;
+  box.style.borderRadius = (a.borderRadius || 16) + 'px';
+  box.style.border = `2px solid ${a.accentColor}`;
+  box.style.fontFamily = `'${a.font}', sans-serif`;
+  box.style.boxShadow = `0 12px 36px ${a.accentColor}44`;
+  const title = (a.titleTemplate || '{name} donated {amount} THB')
+    .replaceAll('{name}', `<span style="color:${a.accentColor}">Anonymous</span>`)
+    .replaceAll('{amount}', `<span style="color:${a.amountColor}; font-weight:800;">99</span>`);
+  $('#prvTitle').innerHTML = title;
+  $('#prvMsg').style.display = a.showMessage ? '' : 'none';
+
+  // Render alert image in preview
+  let img = box.querySelector('.prv-img');
+  if (a.imageUrl) {
+    if (!img) {
+      img = document.createElement('img');
+      img.className = 'prv-img';
+      img.style.cssText = 'width: 64px; height: 64px; border-radius: 10px; object-fit: cover; flex-shrink: 0; margin-right: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);';
+      box.insertBefore(img, box.firstChild);
+    }
+    img.src = a.imageUrl + (a.imageUrl.includes('?') ? '&' : '?') + 't=' + Date.now();
+  } else if (img) {
+    img.remove();
+  }
+}
+
+function toast(msg, isErr) {
+  const t = $('#toast');
+  t.textContent = msg; t.classList.toggle('err', !!isErr);
+  t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+let saveTimer;
+function scheduleAutoSave() {
+  const s = $('#saveStatus');
+  s.textContent = 'Unsaved changes';
+  s.className = 'status dirty';
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveSettings, 600);
+}
+
+async function saveSettings() {
+  const s = $('#saveStatus');
+  try {
+    const r = await fetch('/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(SETTINGS)
+    });
+    if (!r.ok) throw new Error();
+    s.textContent = 'Saved · ' + new Date().toLocaleTimeString();
+    s.className = 'status saved';
+  } catch {
+    s.textContent = 'Save failed';
+    s.className = 'status dirty';
+  }
+}
+
+$('#saveBtn').addEventListener('click', () => { saveSettings(); toast('Saved'); });
+
+$('#testBtn').addEventListener('click', async () => {
+  await fetch('/api/donate', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name: 'TestUser', amount: 99, message: 'This is a preview alert from the console', test: true
+    })
+  });
+  toast('Test alert sent');
+});
+
+$('#ttsTestBtn').addEventListener('click', () => {
+  const lang = SETTINGS.tts?.voice || 'th';
+  const tpl = SETTINGS.tts?.template || '';
+  const text = tpl.replaceAll('{name}', 'Anonymous').replaceAll('{amount}', '99').replaceAll('{message}', 'Thanks for streaming');
+  const audio = new Audio(`/api/tts?lang=${lang}&text=${encodeURIComponent(text)}`);
+  audio.playbackRate = SETTINGS.tts?.rate || 1;
+  audio.play().catch(e => toast('Audio failed: ' + e.message, true));
+});
+
+async function loadHistory() {
+  const r = await fetch('/api/donations');
+  const list = await r.json();
+  $('#histList').innerHTML = list.length === 0
+    ? '<div class="history-empty">No donations yet</div>'
+    : list.slice(0, 50).map(d => `
+      <div class="history-item">
+        <div>
+          <div class="who">${escapeHtml(d.name)}</div>
+          ${d.message ? `<div class="what">${escapeHtml(d.message)}</div>` : ''}
+          <div class="when">${new Date(d.createdAt).toLocaleString('en-GB')}</div>
+        </div>
+        <div class="amt">${d.amount.toLocaleString()}</div>
+      </div>
+    `).join('');
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+$('#clearHist').addEventListener('click', async () => {
+  if (!confirm('Clear all donation history?')) return;
+  await fetch('/api/donations', { method: 'DELETE' });
+  loadHistory();
+});
+
+socket.on('donation', () => loadHistory());
+
+// ---- Generic asset uploader ----
+function bindFileUpload({ inputId, endpoint, payloadKey, sizeLimitMB, onSuccess, statusId }) {
+  $('#' + inputId).addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const status = $('#' + statusId);
+    status.className = 'import-result show loading';
+    status.textContent = 'Uploading…';
+
+    if (file.size > sizeLimitMB * 1024 * 1024) {
+      status.className = 'import-result show err';
+      status.textContent = `File exceeds ${sizeLimitMB} MB`;
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        const r = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ [payloadKey]: reader.result })
+        });
+        const data = await r.json();
+        if (!r.ok || !data.ok) throw new Error(data.error || 'Upload failed');
+        onSuccess(data);
+        status.className = 'import-result show ok';
+        status.textContent = 'Saved · live on overlay';
+        setTimeout(() => { status.className = 'import-result'; }, 2400);
+      } catch (err) {
+        status.className = 'import-result show err';
+        status.textContent = err.message;
+      }
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// ---- Alert image / GIF ----
+function refreshAlertImgPreview() {
+  const url = SETTINGS.alert?.imageUrl;
+  const img = $('#alertImgPreview');
+  const ph = $('#alertImgPlaceholder');
+  if (url) {
+    img.src = url + (url.includes('?') ? '&' : '?') + 't=' + Date.now();
+    img.style.display = 'block';
+    ph.style.display = 'none';
+  } else {
+    img.style.display = 'none';
+    ph.style.display = 'flex';
+  }
+}
+bindFileUpload({
+  inputId: 'alertImgFile',
+  endpoint: '/api/upload-alert-image',
+  payloadKey: 'image',
+  sizeLimitMB: 8,
+  statusId: 'alertImgStatus',
+  onSuccess: (data) => {
+    SETTINGS.alert = SETTINGS.alert || {};
+    SETTINGS.alert.imageUrl = data.url;
+    refreshAlertImgPreview();
+    updatePreview();
+  }
+});
+$('#removeAlertImgBtn').addEventListener('click', async () => {
+  if (!confirm('Remove alert image?')) return;
+  SETTINGS.alert = SETTINGS.alert || {};
+  SETTINGS.alert.imageUrl = '';
+  await saveSettings();
+  refreshAlertImgPreview();
+  updatePreview();
+  toast('Image removed');
+});
+
+// ---- Notification sound ----
+function refreshSoundLabel() {
+  const url = SETTINGS.sound?.url;
+  const lbl = $('#currentSoundLabel');
+  if (url) {
+    const filename = url.split('/').pop();
+    lbl.textContent = filename;
+    lbl.style.color = 'var(--ink)';
+  } else {
+    lbl.textContent = 'No sound uploaded';
+    lbl.style.color = 'var(--ink-2)';
+  }
+}
+bindFileUpload({
+  inputId: 'soundFile',
+  endpoint: '/api/upload-sound',
+  payloadKey: 'audio',
+  sizeLimitMB: 4,
+  statusId: 'soundStatus',
+  onSuccess: (data) => {
+    SETTINGS.sound = SETTINGS.sound || {};
+    SETTINGS.sound.url = data.url;
+    SETTINGS.sound.enabled = true;
+    refreshSoundLabel();
+    // sync checkbox
+    const cb = document.querySelector('[data-path="sound.enabled"]');
+    if (cb) cb.checked = true;
+  }
+});
+$('#previewSoundBtn').addEventListener('click', () => {
+  const url = SETTINGS.sound?.url;
+  if (!url) { toast('No sound to preview', true); return; }
+  const audio = new Audio(url + '?t=' + Date.now());
+  audio.volume = SETTINGS.sound?.volume ?? 0.7;
+  audio.play().catch(e => toast('Playback failed: ' + e.message, true));
+});
+$('#removeSoundBtn').addEventListener('click', async () => {
+  if (!confirm('Remove notification sound?')) return;
+  SETTINGS.sound = SETTINGS.sound || {};
+  SETTINGS.sound.url = '';
+  await saveSettings();
+  refreshSoundLabel();
+  toast('Sound removed');
+});
+
+// ---- Avatar uploader ----
+function refreshAvatarPreview() {
+  const url = SETTINGS.streamer?.avatarUrl;
+  const img = $('#avatarPreview');
+  const fb = $('#avatarPreviewFallback');
+  if (url) {
+    img.src = url + (url.includes('?') ? '&' : '?') + 't=' + Date.now();
+    img.style.display = 'block';
+    fb.style.display = 'none';
+  } else {
+    img.style.display = 'none';
+    fb.style.display = 'flex';
+    const initial = (SETTINGS.streamer?.displayName || SETTINGS.streamer?.name || 'P').trim().charAt(0).toUpperCase();
+    fb.textContent = initial;
+  }
+}
+
+$('#avatarFile').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const status = $('#avatarUploadStatus');
+  status.className = 'import-result show loading';
+  status.textContent = 'Uploading…';
+
+  if (file.size > 6 * 1024 * 1024) {
+    status.className = 'import-result show err';
+    status.textContent = 'File exceeds 6 MB';
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = async () => {
+    try {
+      const r = await fetch('/api/upload-profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: reader.result })
+      });
+      const data = await r.json();
+      if (!r.ok || !data.ok) throw new Error(data.error || 'Upload failed');
+      SETTINGS.streamer = SETTINGS.streamer || {};
+      SETTINGS.streamer.avatarUrl = data.avatarUrl;
+      refreshAvatarPreview();
+      status.className = 'import-result show ok';
+      status.textContent = 'Saved · live on donor page';
+      setTimeout(() => { status.className = 'import-result'; }, 2400);
+    } catch (err) {
+      status.className = 'import-result show err';
+      status.textContent = err.message;
+    }
+  };
+  reader.readAsDataURL(file);
+});
+
+$('#removeAvatarBtn').addEventListener('click', async () => {
+  if (!confirm('Remove profile photo?')) return;
+  SETTINGS.streamer = SETTINGS.streamer || {};
+  SETTINGS.streamer.avatarUrl = '';
+  await saveSettings();
+  refreshAvatarPreview();
+  toast('Photo removed');
+});
+
+// ---- QR Import ----
+$('#qrImport').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const box = $('#qrImportResult');
+  box.className = 'import-result show loading';
+  box.textContent = 'Decoding QR…';
+
+  const reader = new FileReader();
+  reader.onload = async () => {
+    try {
+      const r = await fetch('/api/decode-qr', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: reader.result })
+      });
+      const data = await r.json();
+      if (!r.ok || !data.ok) throw new Error(data.error || 'Decode failed');
+
+      const p = data.parsed;
+      if (!p.proxyValue) throw new Error('Not a PromptPay or TrueMoney QR');
+
+      const input = document.querySelector('[data-path="streamer.promptpayId"]');
+      input.value = p.inputForm || p.proxyValue;
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+
+      const typeLabel = {
+        '01': 'Mobile number',
+        '02': 'National ID',
+        '03': 'e-Wallet ID (15-digit) — phone is hidden when scanned',
+        '04': 'Bank account'
+      }[p.proxyType] || 'Unknown';
+
+      box.className = 'import-result show ok';
+      box.innerHTML = `
+        <div style="font-weight: 600; margin-bottom: 6px;">Decoded successfully — filled in above</div>
+        <div>Proxy: <code>${escapeHtml(p.inputForm || p.proxyValue)}</code></div>
+        <div>Type: ${typeLabel}</div>
+        ${p.merchantName ? `<div>Name: ${escapeHtml(p.merchantName)}</div>` : ''}
+        ${p.isTrueMoney ? '<div style="color: var(--accent-2); margin-top: 4px;">Recognized as TrueMoney Wallet</div>' : ''}
+      `;
+    } catch (err) {
+      box.className = 'import-result show err';
+      box.textContent = err.message;
+    }
+  };
+  reader.readAsDataURL(file);
+});
+
+(async () => {
+  SETTINGS = await (await fetch('/api/settings')).json();
+  bindForm();
+  updatePreview();
+  loadHistory();
+  refreshAvatarPreview();
+  refreshAlertImgPreview();
+  refreshSoundLabel();
+})();
+</script>
+</body>
+</html>

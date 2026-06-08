@@ -1,0 +1,27 @@
+node_modules/
+.env
+.env.local
+
+# Runtime data (sensitive / user-specific)
+data/donations.json
+
+# User-uploaded assets (timestamped — not source code)
+public/assets/profile-*.jpg
+public/assets/profile-*.png
+public/assets/profile-*.webp
+public/assets/alert-*.jpg
+public/assets/alert-*.png
+public/assets/alert-*.webp
+public/assets/alert-*.gif
+public/assets/sound-*.mp3
+public/assets/sound-*.wav
+public/assets/sound-*.ogg
+public/assets/sound-*.m4a
+
+# Misc
+*.log
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+.claude/

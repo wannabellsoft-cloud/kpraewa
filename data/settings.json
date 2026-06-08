@@ -1,0 +1,45 @@
+{
+  "streamer": {
+    "name": "k.praewa",
+    "displayName": "Praewa Klummeesri",
+    "avatarUrl": "/assets/profile-1780929808897.jpg",
+    "tiktokUrl": "https://www.tiktok.com/@k.praewa",
+    "instagramUrl": "https://www.instagram.com/k.praewa",
+    "bankName": "TrueMoney Wallet",
+    "bankAccount": "166-8-15077-9",
+    "accountHolder": "TrueWallet · แพรวา",
+    "promptpayId": "004999093258530"
+  },
+  "alert": {
+    "duration": 8000,
+    "bgColor": "#1a1a2e",
+    "accentColor": "#ff4d8d",
+    "textColor": "#ffffff",
+    "amountColor": "#ffd166",
+    "font": "Prompt",
+    "animation": "slide-up",
+    "titleTemplate": "{name} โดเนท {amount} บาท!",
+    "showMessage": true,
+    "borderRadius": 16,
+    "imageUrl": ""
+  },
+  "tts": {
+    "enabled": true,
+    "provider": "google",
+    "rate": 1.2,
+    "voice": "th",
+    "template": "คุณ {name} โดเนทมา {amount} บาท พูดว่า {message}",
+    "readMessageOnly": false
+  },
+  "sound": {
+    "enabled": true,
+    "url": "/assets/sound-1780930838695.mp3",
+    "volume": 0.7
+  },
+  "rules": {
+    "minAmount": 1,
+    "maxAmount": 100000,
+    "maxNameLength": 30,
+    "maxMessageLength": 200
+  }
+}

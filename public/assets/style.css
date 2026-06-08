@@ -1,0 +1,80 @@
+:root {
+  --bg: #0f0f1a;
+  --panel: #1a1a2e;
+  --panel-2: #232342;
+  --border: #2d2d52;
+  --text: #e8e8f5;
+  --muted: #8b8baa;
+  --accent: #ff4d8d;
+  --accent-2: #ffd166;
+  --ok: #4ade80;
+  --err: #f87171;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text);
+  font-family: 'Prompt', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  min-height: 100vh; }
+a { color: var(--accent); }
+
+.container { max-width: 1100px; margin: 0 auto; padding: 24px; }
+.header { display:flex; align-items:center; justify-content: space-between; margin-bottom: 24px; }
+.header h1 { margin: 0; font-size: 22px; font-weight: 600; }
+.header .nav a { color: var(--muted); text-decoration: none; margin-left: 16px; font-size: 14px; }
+.header .nav a:hover { color: var(--text); }
+
+.card { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 24px; margin-bottom: 16px; }
+.card h2 { margin: 0 0 16px; font-size: 16px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+.card h2 .icon { color: var(--accent); margin-right: 6px; }
+
+.grid { display: grid; gap: 16px; }
+.grid-2 { grid-template-columns: 1fr 1fr; }
+.grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+@media (max-width: 720px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+
+label { display:block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+input[type=text], input[type=number], textarea, select {
+  width: 100%; background: var(--panel-2); color: var(--text); border: 1px solid var(--border);
+  border-radius: 8px; padding: 10px 12px; font-size: 14px; font-family: inherit;
+}
+input[type=color] { width: 100%; height: 42px; background: var(--panel-2); border:1px solid var(--border); border-radius: 8px; cursor: pointer; padding: 4px; }
+input:focus, textarea:focus, select:focus { outline: none; border-color: var(--accent); }
+input[type=range] { width: 100%; accent-color: var(--accent); }
+textarea { resize: vertical; min-height: 80px; }
+.field { margin-bottom: 14px; }
+.field .hint { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+.row { display: flex; gap: 10px; align-items: center; }
+.row > * { flex: 1; }
+.checkbox { display:flex; align-items:center; gap: 8px; cursor: pointer; color: var(--text); }
+.checkbox input { width: 18px; height: 18px; accent-color: var(--accent); }
+
+.btn { background: var(--accent); color: white; border: none; border-radius: 8px; padding: 12px 20px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; transition: transform 0.1s, opacity 0.2s; }
+.btn:hover { opacity: 0.9; }
+.btn:active { transform: scale(0.98); }
+.btn.secondary { background: var(--panel-2); color: var(--text); border:1px solid var(--border); }
+.btn.ghost { background: transparent; color: var(--muted); }
+.btn.full { width: 100%; }
+.btn.danger { background: var(--err); }
+
+.bank-info { background: linear-gradient(135deg, #009f3d 0%, #00673a 100%); border-radius: 12px; padding: 20px; color: white; }
+.bank-info .label { font-size: 12px; opacity: 0.8; }
+.bank-info .number { font-size: 28px; font-weight: 700; letter-spacing: 2px; margin: 4px 0; font-family: 'Courier New', monospace; }
+.bank-info .name { font-size: 15px; }
+.bank-info .copy { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; margin-top: 8px; }
+
+.qr-box { background: white; padding: 16px; border-radius: 12px; text-align: center; }
+.qr-box img { width: 100%; max-width: 280px; height: auto; }
+.qr-box .ppay-logo { color: #1e4d8c; font-weight: 700; margin-bottom: 8px; font-size: 14px; }
+
+.toast { position: fixed; top: 20px; right: 20px; background: var(--ok); color: white; padding: 12px 20px; border-radius: 8px; opacity: 0; transition: opacity 0.3s; z-index: 1000; }
+.toast.show { opacity: 1; }
+.toast.err { background: var(--err); }
+
+.donation-list { max-height: 320px; overflow-y: auto; }
+.donation-item { padding: 12px; border-bottom: 1px solid var(--border); display:flex; justify-content: space-between; align-items: center; gap: 12px; }
+.donation-item:last-child { border-bottom: none; }
+.donation-item .info .name { font-weight: 600; }
+.donation-item .info .msg { color: var(--muted); font-size: 13px; margin-top: 2px; }
+.donation-item .info .time { color: var(--muted); font-size: 11px; margin-top: 2px; }
+.donation-item .amt { color: var(--accent-2); font-weight: 700; font-size: 18px; white-space: nowrap; }

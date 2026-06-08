@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<title>Donation Overlay (OBS)</title>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600;700&family=Kanit:wght@400;600;700&family=Noto+Sans+Thai:wght@400;600;700&family=Sarabun:wght@400;600;700&family=Mitr:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  html, body { margin:0; padding:0; background: transparent; overflow: hidden; height: 100vh; width: 100vw; font-family: 'Prompt', sans-serif; }
+
+  #alertSlot {
+    position: fixed; left: 50%; top: 80px;
+    transform: translateX(-50%);
+    min-width: 420px; max-width: 720px;
+    pointer-events: none;
+  }
+
+  .alert {
+    display: flex; align-items: center; gap: 18px;
+    padding: 22px 28px;
+    border-radius: 16px;
+    border: 3px solid #ff4d8d;
+    background: #1a1a2e;
+    color: #fff;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.5), 0 0 24px rgba(255,77,141,0.5);
+    opacity: 0;
+    transform: translateY(40px);
+    transition: transform 0.5s cubic-bezier(.2,.9,.3,1.4), opacity 0.4s;
+  }
+  .alert.show { opacity: 1; transform: translateY(0); }
+  .alert.hide { opacity: 0; transform: translateY(-40px); }
+
+  .alert.anim-slide-left { transform: translateX(80px); }
+  .alert.anim-slide-left.show { transform: translateX(0); }
+  .alert.anim-slide-left.hide { transform: translateX(-80px); }
+
+  .alert.anim-fade { transform: scale(1); }
+  .alert.anim-fade.show { transform: scale(1); }
+  .alert.anim-fade.hide { transform: scale(1); }
+
+  .alert.anim-bounce { transform: scale(0.3); }
+  .alert.anim-bounce.show { transform: scale(1); transition: transform 0.7s cubic-bezier(.34,1.8,.64,1), opacity 0.4s; }
+  .alert.anim-bounce.hide { transform: scale(0.3); }
+
+  .alert.anim-zoom { transform: scale(0); }
+  .alert.anim-zoom.show { transform: scale(1); }
+  .alert.anim-zoom.hide { transform: scale(1.4); }
+
+  .alert .icon { font-size: 56px; line-height: 1; flex-shrink: 0; filter: drop-shadow(0 4px 12px rgba(0,0,0,0.4)); }
+  .alert .alert-img {
+    width: 96px; height: 96px;
+    border-radius: 14px;
+    object-fit: cover;
+    flex-shrink: 0;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+    animation: imgPop 0.6s cubic-bezier(.34,1.7,.6,1);
+  }
+  @keyframes imgPop {
+    0% { transform: scale(0.5) rotate(-8deg); opacity: 0; }
+    60% { transform: scale(1.08) rotate(2deg); }
+    100% { transform: scale(1) rotate(0); opacity: 1; }
+  }
+  .alert .body { flex: 1; min-width: 0; }
+  .alert .title { font-size: 24px; font-weight: 700; line-height: 1.2; word-wrap: break-word; }
+  .alert .title .name { color: #ff4d8d; }
+  .alert .title .amt { font-weight: 800; }
+  .alert .msg { font-size: 16px; margin-top: 8px; opacity: 0.92; word-wrap: break-word; line-height: 1.35; }
+
+</style>
+</head>
+<body>
+<div id="alertSlot"></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+let SETTINGS = {};
+const queue = [];
+let playing = false;
+const slot = document.getElementById('alertSlot');
+const socket = io();
+
+socket.on('settings:update', (s) => { SETTINGS = s; });
+socket.on('donation', (d) => { queue.push(d); pump(); });
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+async function pump() {
+  if (playing) return;
+  const item = queue.shift();
+  if (!item) return;
+  playing = true;
+  await showAlert(item);
+  playing = false;
+  pump();
+}
+
+function buildAlert(d) {
+  const a = SETTINGS.alert || {};
+  const el = document.createElement('div');
+  el.className = `alert anim-${a.animation || 'slide-up'}`;
+  el.style.background = a.bgColor || '#1a1a2e';
+  el.style.color = a.textColor || '#fff';
+  el.style.borderColor = a.accentColor || '#ff4d8d';
+  el.style.borderRadius = (a.borderRadius ?? 16) + 'px';
+  el.style.fontFamily = `'${a.font || 'Prompt'}', sans-serif`;
+  el.style.boxShadow = `0 12px 40px rgba(0,0,0,0.5), 0 0 28px ${(a.accentColor || '#ff4d8d')}88`;
+
+  const title = (a.titleTemplate || '{name} โดเนท {amount} บาท!')
+    .replaceAll('{name}', `<span class="name" style="color:${a.accentColor}">${escapeHtml(d.name)}</span>`)
+    .replaceAll('{amount}', `<span class="amt" style="color:${a.amountColor || '#ffd166'}">${d.amount.toLocaleString()}</span>`);
+
+  const imgHtml = a.imageUrl
+    ? `<img class="alert-img" src="${escapeHtml(a.imageUrl)}" alt="" decoding="async" loading="eager"
+            onerror="this.style.display='none';" />`
+    : '';
+  el.innerHTML = `
+    ${imgHtml}
+    <div class="body">
+      <div class="title">${title}</div>
+      ${(a.showMessage !== false && d.message) ? `<div class="msg">${escapeHtml(d.message)}</div>` : ''}
+    </div>`;
+  return el;
+}
+
+// Keep references so audio isn't GC'd mid-playback
+let liveAudios = [];
+function trackAudio(a) {
+  liveAudios.push(a);
+  // prune
+  liveAudios = liveAudios.filter(x => x && !x.ended);
+}
+function stopAllAudio() {
+  liveAudios.forEach(a => { try { a.pause(); a.src = ''; } catch {} });
+  liveAudios = [];
+}
+
+function playSound() {
+  const s = SETTINGS.sound || {};
+  if (!s.enabled || !s.url) {
+    console.log('[Sound] skipped (disabled or no url)', s);
+    return Promise.resolve();
+  }
+  return new Promise((resolve) => {
+    let done = false;
+    const finish = (why) => { if (!done) { done = true; console.log('[Sound]', why); resolve(); } };
+    try {
+      const a = new Audio(s.url);
+      trackAudio(a);
+      a.volume = s.volume ?? 0.7;
+      a.onended = () => finish('ended');
+      a.onerror = (e) => finish('error: ' + (e?.message || 'load failed: ' + s.url));
+      a.play()
+        .then(() => console.log('[Sound] playing', s.url))
+        .catch(e => finish('play rejected: ' + e.message));
+      setTimeout(() => finish('timeout 5s'), 5000);
+    } catch (e) { finish('threw: ' + e.message); }
+  });
+}
+
+function playTTS(d) {
+  const t = SETTINGS.tts || {};
+  if (!t.enabled) { console.log('[TTS] disabled'); return Promise.resolve(); }
+  let text;
+  if (t.readMessageOnly) {
+    text = d.message || '';
+    if (!text) { console.log('[TTS] no message to read'); return Promise.resolve(); }
+  } else {
+    text = (t.template || 'คุณ {name} โดเนทมา {amount} บาท พูดว่า {message}')
+      .replaceAll('{name}', d.name)
+      .replaceAll('{amount}', d.amount.toLocaleString())
+      .replaceAll('{message}', d.message || '');
+  }
+  text = text.trim().slice(0, 200);
+  if (!text) { console.log('[TTS] empty text'); return Promise.resolve(); }
+
+  return new Promise((resolve) => {
+    let done = false;
+    const finish = (why) => { if (!done) { done = true; console.log('[TTS]', why); resolve(); } };
+    try {
+      const url = `/api/tts?lang=${encodeURIComponent(t.voice || 'th')}&text=${encodeURIComponent(text)}`;
+      console.log('[TTS] requesting', text.length, 'chars');
+      const audio = new Audio(url);
+      trackAudio(audio);
+      audio.playbackRate = t.rate || 1;
+      audio.volume = 1.0;
+      audio.onended = () => finish('ended');
+      audio.onerror = (e) => finish('error: ' + (e?.message || 'load failed'));
+      audio.play()
+        .then(() => console.log('[TTS] playing'))
+        .catch(e => finish('play rejected: ' + e.message));
+      setTimeout(() => finish('timeout 20s'), 20000);
+    } catch (e) { finish('threw: ' + e.message); }
+  });
+}
+
+async function showAlert(d) {
+  const a = SETTINGS.alert || {};
+  stopAllAudio();  // stop any leftover audio from previous alert
+  const el = buildAlert(d);
+  slot.innerHTML = '';
+  slot.appendChild(el);
+
+  // trigger animation
+  await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+  el.classList.add('show');
+
+  // Play sound first (short notification), then TTS — but if both fail, don't block
+  const audioPromise = (async () => {
+    const soundPromise = playSound();
+    // give the notification sound a small head-start so it doesn't talk over TTS
+    await new Promise(r => setTimeout(r, 500));
+    // TTS runs in parallel with the tail of the notification sound
+    const ttsPromise = playTTS(d);
+    await Promise.all([soundPromise, ttsPromise]);
+    console.log('[Alert] all audio finished');
+  })();
+
+  const minDuration = a.duration || 8000;
+  await Promise.race([
+    audioPromise.then(() => new Promise(r => setTimeout(r, 800))),
+    new Promise(r => setTimeout(r, minDuration + 12000))  // hard cap longer so TTS isn't cut
+  ]);
+  // ensure shown at least minDuration
+  await new Promise(r => setTimeout(r, Math.max(0, minDuration - 1000)));
+
+  el.classList.remove('show');
+  el.classList.add('hide');
+  await new Promise(r => setTimeout(r, 600));
+  el.remove();
+}
+
+// ---- Silent audio unlock (handles browser autoplay policy invisibly) ----
+// In OBS browser source autoplay is enabled by default — this just primes
+// regular browser tabs so audio works without a visible prompt.
+const SILENT_MP3 = 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQxAADB8AhSmxhIIEVCSiJrDCQBTcu3UrAIwUdkRgQbFAZC1CQEwTJ9mjRvBA4UOLD8nKVOWfh+UlK3z/177OXrfOdKl7pyn3Xf//WreyTRUoAWgBgkOAGbZHBgG1OF6zM82DWbZaUmMBptgQhGjsyYqc9ae9XFz28LSXWWHEEoYC8NKAEygQiYBFAQRDOAEAhgg5UFXKtVZQAA';
+let audioUnlocked = false;
+
+async function tryUnlockAudio() {
+  if (audioUnlocked) return true;
+  try {
+    const a = new Audio(SILENT_MP3);
+    a.volume = 0;
+    await a.play();
+    a.pause();
+    audioUnlocked = true;
+    return true;
+  } catch { return false; }
+}
+
+// Probe on load (works in OBS automatically)
+tryUnlockAudio();
+
+// In regular browser tabs, the first interaction anywhere on the page
+// silently unlocks audio for the session.
+['click', 'keydown', 'pointerdown', 'touchstart'].forEach(evt => {
+  document.addEventListener(evt, tryUnlockAudio, { capture: true, once: false });
+});
+
+// initial fetch in case socket pushes settings late
+fetch('/api/settings').then(r => r.json()).then(s => SETTINGS = s);
+</script>
+</body>
+</html>

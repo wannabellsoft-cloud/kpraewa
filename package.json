@@ -1,0 +1,17 @@
+{
+  "name": "donate-kpraewa",
+  "version": "1.0.0",
+  "description": "Donation alert system for k.praewa - Kasikorn 1668150779",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "jimp": "^1.6.1",
+    "jsqr": "^1.4.0",
+    "qrcode": "^1.5.4",
+    "socket.io": "^4.7.5"
+  }
+}
