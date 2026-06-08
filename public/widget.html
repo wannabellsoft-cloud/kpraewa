@@ -16,6 +16,7 @@
   <div class="crumb">Widget Console</div>
   <div class="actions">
     <a href="/overlay" target="_blank">Overlay</a>
+    <a href="#" id="logoutLink">Sign out</a>
   </div>
 </header>
 
@@ -707,6 +708,17 @@ $('#qrImport').addEventListener('change', async (e) => {
     }
   };
   reader.readAsDataURL(file);
+});
+
+// Client-side auth check — redirect to login if cookie missing/expired
+fetch('/api/auth-status').then(r => r.json()).then(d => {
+  if (!d.authed) location.href = '/widget/login';
+}).catch(() => {});
+
+$('#logoutLink').addEventListener('click', async (e) => {
+  e.preventDefault();
+  await fetch('/api/logout', { method: 'POST' });
+  location.href = '/widget/login';
 });
 
 (async () => {

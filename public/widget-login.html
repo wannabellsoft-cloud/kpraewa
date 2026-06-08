@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Widget Console · Sign in</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/admin.css" />
+<style>
+  body {
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh; padding: 24px;
+    background-image:
+      radial-gradient(ellipse 60% 50% at 50% 0%, rgba(212, 103, 124, 0.08), transparent 60%),
+      radial-gradient(ellipse 50% 40% at 100% 100%, rgba(229, 184, 192, 0.04), transparent 60%);
+  }
+  .auth-card {
+    width: 100%; max-width: 380px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    padding: 36px 32px 28px;
+    position: relative;
+    overflow: hidden;
+  }
+  .auth-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent-2), transparent);
+    opacity: 0.6;
+  }
+  .auth-brand {
+    font-family: var(--serif);
+    font-style: italic;
+    font-weight: 500;
+    font-size: 28px;
+    color: var(--ink);
+    margin-bottom: 4px;
+    letter-spacing: 0.01em;
+  }
+  .auth-brand .dot { color: var(--accent-2); }
+  .auth-sub {
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 32px;
+    font-weight: 600;
+  }
+  .auth-error {
+    background: rgba(244, 113, 113, 0.08);
+    border: 1px solid rgba(244, 113, 113, 0.3);
+    color: var(--err);
+    padding: 10px 14px;
+    border-radius: var(--r-sm);
+    font-size: 12px;
+    margin-bottom: 16px;
+    display: none;
+  }
+  .auth-error.show { display: block; }
+  .auth-foot {
+    margin-top: 22px;
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-align: center;
+    font-weight: 500;
+  }
+  .auth-foot a { color: var(--muted); text-decoration: none; }
+  .auth-foot a:hover { color: var(--accent-2); }
+</style>
+</head>
+<body>
+
+<div class="auth-card">
+  <div class="auth-brand">k.praewa<span class="dot">.</span></div>
+  <div class="auth-sub">Widget Console</div>
+
+  <div class="auth-error" id="authError"></div>
+
+  <form id="loginForm" autocomplete="off">
+    <div class="field">
+      <label class="field-label" for="user">Username</label>
+      <input type="text" id="user" name="user" autocomplete="username" required autofocus />
+    </div>
+    <div class="field">
+      <label class="field-label" for="pass">Password</label>
+      <input type="password" id="pass" name="pass" autocomplete="current-password" required />
+    </div>
+    <button type="submit" class="btn block" id="submitBtn">Sign in</button>
+  </form>
+
+  <div class="auth-foot">
+    <a href="/">← Back to support page</a>
+  </div>
+</div>
+
+<script>
+  const form = document.getElementById('loginForm');
+  const err = document.getElementById('authError');
+  const btn = document.getElementById('submitBtn');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    err.classList.remove('show');
+    btn.disabled = true;
+    btn.textContent = 'Signing in…';
+    try {
+      const user = document.getElementById('user').value.trim();
+      const pass = document.getElementById('pass').value;
+      const r = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user, pass })
+      });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok || !data.ok) throw new Error(data.error || 'Sign-in failed');
+      location.href = '/widget';
+    } catch (e) {
+      err.textContent = e.message;
+      err.classList.add('show');
+      btn.disabled = false;
+      btn.textContent = 'Sign in';
+    }
+  });
+
+  // If already authed, skip to console
+  fetch('/api/auth-status').then(r => r.json()).then(d => {
+    if (d.authed) location.href = '/widget';
+  }).catch(() => {});
+</script>
+</body>
+</html>

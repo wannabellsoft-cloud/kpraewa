@@ -11,6 +11,7 @@ const crypto = require('crypto');
 const storage = require('./lib/storage');
 const blob = require('./lib/blob');
 const realtime = require('./lib/realtime');
+const auth = require('./lib/auth');
 const { promptpayPayload, parsePromptPayQR } = require('./lib/promptpay');
 
 // ---- minimal .env loader for local dev ----
@@ -25,6 +26,32 @@ try {
 function createApp() {
   const app = express();
   app.use(express.json({ limit: '12mb' }));
+
+  // ---- Auth: login routes (must come before static so paths don't collide) ----
+  app.get('/widget/login', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'widget-login.html')));
+
+  app.post('/api/login', (req, res) => {
+    const { user, pass } = req.body || {};
+    if (!auth.checkCredentials(user, pass)) {
+      return res.status(401).json({ ok: false, error: 'Invalid username or password' });
+    }
+    auth.setSessionCookie(res, user);
+    res.json({ ok: true });
+  });
+
+  app.post('/api/logout', (_req, res) => {
+    auth.clearSessionCookie(res);
+    res.json({ ok: true });
+  });
+
+  app.get('/api/auth-status', (req, res) => {
+    res.json({ authed: !!auth.getSession(req), user: auth.getSession(req)?.u || null });
+  });
+
+  // ---- Static + public pages ----
+  // /widget is served statically too; the widget.html does a client-side auth-status
+  // check and redirects to /widget/login if no session. All admin-only APIs are
+  // protected server-side, so even if the markup is visible nothing writes without auth.
   app.use(express.static(path.join(__dirname, 'public'), { extensions: ['html'] }));
   app.get('/widget', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'widget.html')));
   app.get('/overlay', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'overlay.html')));
@@ -35,7 +62,7 @@ function createApp() {
     catch (e) { res.status(500).json({ error: e.message }); }
   });
 
-  app.post('/api/settings', async (req, res) => {
+  app.post('/api/settings', auth.requireAuth, async (req, res) => {
     try {
       const current = await storage.getSettings();
       const merged = deepMerge(current, req.body || {});
@@ -67,7 +94,7 @@ function createApp() {
   });
 
   // ---- Donate (manual / test) ----
-  app.post('/api/donate', async (req, res) => {
+  app.post('/api/donate', auth.requireAuth, async (req, res) => {
     try {
       const settings = await storage.getSettings();
       const rules = settings.rules || {};
@@ -94,18 +121,18 @@ function createApp() {
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
 
-  app.get('/api/donations', async (_req, res) => {
+  app.get('/api/donations', auth.requireAuth, async (_req, res) => {
     try { res.json(await storage.getDonations()); }
     catch (e) { res.status(500).json({ error: e.message }); }
   });
 
-  app.delete('/api/donations', async (_req, res) => {
+  app.delete('/api/donations', auth.requireAuth, async (_req, res) => {
     try { await storage.setDonations([]); res.json({ ok: true }); }
     catch (e) { res.status(500).json({ error: e.message }); }
   });
 
   // ---- QR decode (PromptPay / TrueMoney) ----
-  app.post('/api/decode-qr', async (req, res) => {
+  app.post('/api/decode-qr', auth.requireAuth, async (req, res) => {
     try {
       let payload = req.body?.payload;
       if (!payload && req.body?.image) {
@@ -261,7 +288,7 @@ function createApp() {
   });
 
   // ---- File uploads ----
-  app.post('/api/upload-sound', async (req, res) => {
+  app.post('/api/upload-sound', auth.requireAuth, async (req, res) => {
     const { audio } = req.body || {};
     if (!audio || typeof audio !== 'string') return res.status(400).json({ ok: false, error: 'ไม่พบไฟล์เสียง' });
     const m = audio.match(/^data:audio\/([a-z0-9+\-]+);base64,(.+)$/i);
@@ -287,7 +314,7 @@ function createApp() {
     } catch (e) { res.status(500).json({ ok: false, error: 'บันทึกไม่สำเร็จ: ' + e.message }); }
   });
 
-  app.post('/api/upload-alert-image', async (req, res) => {
+  app.post('/api/upload-alert-image', auth.requireAuth, async (req, res) => {
     const { image } = req.body || {};
     if (!image || typeof image !== 'string') return res.status(400).json({ ok: false, error: 'ไม่พบรูปภาพ' });
     const m = image.match(/^data:image\/(jpeg|jpg|png|webp|gif);base64,(.+)$/i);
@@ -306,7 +333,7 @@ function createApp() {
     } catch (e) { res.status(500).json({ ok: false, error: 'บันทึกไม่สำเร็จ: ' + e.message }); }
   });
 
-  app.post('/api/upload-profile', async (req, res) => {
+  app.post('/api/upload-profile', auth.requireAuth, async (req, res) => {
     const { image } = req.body || {};
     if (!image || typeof image !== 'string') return res.status(400).json({ ok: false, error: 'ไม่พบรูปภาพ' });
     const m = image.match(/^data:(image\/(jpeg|jpg|png|webp));base64,(.+)$/);

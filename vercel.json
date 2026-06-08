@@ -4,8 +4,8 @@
   "framework": null,
   "rewrites": [
     { "source": "/widget", "destination": "/widget.html" },
-    { "source": "/overlay", "destination": "/overlay.html" },
-    { "source": "/api/(.*)", "destination": "/api/[...all]" }
+    { "source": "/widget/login", "destination": "/widget-login.html" },
+    { "source": "/overlay", "destination": "/overlay.html" }
   ],
   "functions": {
     "api/[...all].js": {
