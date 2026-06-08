@@ -251,15 +251,20 @@
         </div>
       </div>
 
-      <div class="field">
+      <div class="field" id="voiceTemplateField">
         <label class="field-label">Voice template</label>
-        <input type="text" data-path="tts.template" />
-        <div class="hint">Available variables: <code>{name}</code> <code>{amount}</code> <code>{message}</code></div>
+        <input type="text" data-path="tts.template" id="voiceTemplateInput" />
+        <div class="hint">
+          Available variables: <code>{name}</code> <code>{amount}</code> <code>{message}</code>
+        </div>
+        <div class="hint" id="templateOverrideHint" style="display:none; color: var(--warn); margin-top: 4px;">
+          Template is ignored while <em>Read message only</em> is on — only the donor's <code>{message}</code> will be read.
+        </div>
       </div>
 
       <label class="checkbox">
-        <input type="checkbox" data-path="tts.readMessageOnly" />
-        <span>Read message only (skip prefix)</span>
+        <input type="checkbox" data-path="tts.readMessageOnly" id="readMessageOnlyCb" />
+        <span>Read message only (skip the prefix template above)</span>
       </label>
 
       <button class="btn ghost block" id="ttsTestBtn" style="margin-top: 14px;">Test voice</button>
@@ -365,6 +370,17 @@ function updateLabels() {
   $('#brLbl').textContent = SETTINGS.alert?.borderRadius ?? 16;
   $('#rateLbl').textContent = (SETTINGS.tts?.rate ?? 1).toFixed(1);
   $('#volLbl').textContent = Math.round((SETTINGS.sound?.volume ?? 0.7) * 100);
+  updateVoiceTemplateState();
+}
+
+function updateVoiceTemplateState() {
+  const messageOnly = !!SETTINGS.tts?.readMessageOnly;
+  const input = $('#voiceTemplateInput');
+  const hint = $('#templateOverrideHint');
+  if (!input) return;
+  input.disabled = messageOnly;
+  input.style.opacity = messageOnly ? '0.45' : '1';
+  if (hint) hint.style.display = messageOnly ? 'block' : 'none';
 }
 
 function updatePreview() {
