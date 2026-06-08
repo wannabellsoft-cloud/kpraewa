@@ -25,15 +25,15 @@ const {
   SignatureMissingTokensError
 } = require('tiktok-live-connector');
 
-// ---------- args ----------
+// ---------- args / env ----------
 const argv = process.argv.slice(2);
-let handle = null;
+let handle = process.env.TIKTOK_HANDLE || null;
 const opts = {
   api: (process.env.BRIDGE_API || 'https://kpraewa.vercel.app').replace(/\/$/, ''),
   user: process.env.BRIDGE_USER || 'Admin',
   pass: process.env.BRIDGE_PASS || '',
-  verbose: false,
-  raw: false
+  verbose: process.env.BRIDGE_VERBOSE === '1' || process.env.BRIDGE_VERBOSE === 'true',
+  raw: process.env.BRIDGE_RAW === '1' || process.env.BRIDGE_RAW === 'true'
 };
 for (let i = 0; i < argv.length; i++) {
   const a = argv[i];
@@ -46,11 +46,12 @@ for (let i = 0; i < argv.length; i++) {
   else if (!handle) handle = a;
 }
 if (!handle) {
-  console.error('Usage: node tiktok-bridge.js @username --pass YOUR_PASS [--api URL] [--user U] [--verbose] [--raw]');
+  console.error('Missing TikTok handle. Pass as first argument or set TIKTOK_HANDLE env var.');
+  console.error('Example: node tiktok-bridge.js @k.praewa --pass YOUR_PASS');
   process.exit(1);
 }
 if (!opts.pass) {
-  console.error('Missing --pass (or BRIDGE_PASS env var) — needed to log in to the API.');
+  console.error('Missing --pass (or BRIDGE_PASS env var) — needed to log in to the donate API.');
   process.exit(1);
 }
 handle = handle.startsWith('@') ? handle : '@' + handle;
