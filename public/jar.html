@@ -86,12 +86,12 @@
   /* Glass-theme gift area (mason jar body) */
   .jar-content {
     position: absolute;
-    left: 36px;
-    right: 36px;
-    top: 110px;
-    bottom: 50px;
+    left: 62px;
+    right: 62px;
+    top: 116px;
+    bottom: 32px;
     overflow: hidden;
-    border-radius: 0 0 100px 100px / 0 0 50px 50px;
+    border-radius: 0 0 60px 60px / 0 0 36px 36px;
     z-index: 2;
   }
   /* Lab-theme gift area — clip-path traces the Erlenmeyer cone so gifts
@@ -276,77 +276,81 @@
 
   <div class="jar-container" id="jarContainer">
 
-    <!-- ========== Glass jar (cute mason jar) ========== -->
+    <!-- ========== Glass jar (clean realistic mason jar) ========== -->
     <svg class="jar-svg theme-svg theme-glass" viewBox="0 0 380 540" xmlns="http://www.w3.org/2000/svg">
       <defs>
-        <linearGradient id="g_glass" x1="0" x2="1" y1="0" y2="1">
-          <stop offset="0%" stop-color="rgba(255,255,255,0.28)"/>
-          <stop offset="50%" stop-color="rgba(255,255,255,0.06)"/>
-          <stop offset="100%" stop-color="rgba(255,255,255,0.22)"/>
+        <!-- Glass body — bright edges, fade in the middle for a "see-through" feel -->
+        <linearGradient id="g_body" x1="0" x2="1" y1="0" y2="0">
+          <stop offset="0%"   stop-color="rgba(255,255,255,0.28)"/>
+          <stop offset="14%"  stop-color="rgba(255,255,255,0.08)"/>
+          <stop offset="50%"  stop-color="rgba(255,255,255,0.02)"/>
+          <stop offset="86%"  stop-color="rgba(255,255,255,0.08)"/>
+          <stop offset="100%" stop-color="rgba(255,255,255,0.25)"/>
         </linearGradient>
-        <linearGradient id="g_rim" x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0%" stop-color="rgba(255,255,255,0.65)"/>
-          <stop offset="100%" stop-color="rgba(255,255,255,0.3)"/>
+        <!-- Brushed-metal lid -->
+        <linearGradient id="g_lid" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%"   stop-color="rgba(225,228,235,0.75)"/>
+          <stop offset="48%"  stop-color="rgba(170,175,185,0.5)"/>
+          <stop offset="100%" stop-color="rgba(205,210,220,0.6)"/>
         </linearGradient>
-        <linearGradient id="g_ribbon" x1="0" x2="1" y1="0" y2="0">
-          <stop offset="0%" stop-color="#b54d61"/>
-          <stop offset="50%" stop-color="#e093a1"/>
-          <stop offset="100%" stop-color="#b54d61"/>
-        </linearGradient>
+        <!-- Vertical highlight gradient (used for shine lines) -->
         <linearGradient id="g_shine" x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0%" stop-color="rgba(255,255,255,0.55)"/>
+          <stop offset="0%"   stop-color="rgba(255,255,255,0)"/>
+          <stop offset="20%"  stop-color="rgba(255,255,255,0.55)"/>
+          <stop offset="80%"  stop-color="rgba(255,255,255,0.55)"/>
           <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
         </linearGradient>
       </defs>
 
-      <!-- Lid top -->
-      <ellipse cx="190" cy="46" rx="142" ry="8" fill="rgba(255,255,255,0.45)"/>
-      <rect x="48" y="42" width="284" height="20" rx="6"
-            fill="url(#g_rim)" stroke="rgba(255,255,255,0.55)" stroke-width="1.5"/>
+      <!-- Lid top surface (slightly domed ellipse) -->
+      <ellipse cx="190" cy="44" rx="118" ry="8"
+               fill="rgba(225,228,235,0.55)"
+               stroke="rgba(255,255,255,0.5)" stroke-width="1"/>
 
-      <!-- Lid screw band -->
-      <rect x="40" y="60" width="300" height="42" rx="8"
-            fill="url(#g_rim)" stroke="rgba(255,255,255,0.55)" stroke-width="1.5"/>
-      <!-- Cute embossed dots on lid -->
-      <circle cx="80" cy="81" r="2" fill="rgba(255,255,255,0.5)"/>
-      <circle cx="300" cy="81" r="2" fill="rgba(255,255,255,0.5)"/>
+      <!-- Lid ring (the screw band) -->
+      <rect x="72" y="44" width="236" height="26"
+            fill="url(#g_lid)"
+            stroke="rgba(255,255,255,0.45)" stroke-width="1.2"/>
+      <!-- Hint of screw threads -->
+      <line x1="76" y1="52" x2="304" y2="52" stroke="rgba(255,255,255,0.28)" stroke-width="0.6"/>
+      <line x1="76" y1="62" x2="304" y2="62" stroke="rgba(255,255,255,0.22)" stroke-width="0.5"/>
 
-      <!-- Neck (slightly tapered for the cute curve) -->
-      <path d="M 48 102 Q 48 120 56 130 L 56 140 L 324 140 L 324 130 Q 332 120 332 102 Z"
-            fill="url(#g_glass)" stroke="rgba(255,255,255,0.55)" stroke-width="2"/>
+      <!-- Lid bottom edge (where the lid meets the jar neck) -->
+      <ellipse cx="190" cy="70" rx="118" ry="5"
+               fill="rgba(200,205,215,0.45)"
+               stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
 
-      <!-- Body (rounder, like a hug) -->
-      <path d="M 56 140
-               L 56 460
-               Q 56 510 110 510
-               L 270 510
-               Q 324 510 324 460
-               L 324 140
+      <!-- Short neck (subtle inward step) -->
+      <path d="M 70 72 L 70 96 Q 70 104 78 106 L 302 106 Q 310 104 310 96 L 310 72 Z"
+            fill="url(#g_body)"
+            stroke="rgba(255,255,255,0.5)" stroke-width="1.4"/>
+
+      <!-- Body (tall cylinder, rounded bottom) -->
+      <path d="M 60 108
+               L 60 470
+               Q 60 512 108 512
+               L 272 512
+               Q 320 512 320 470
+               L 320 108
                Z"
-            fill="url(#g_glass)"
-            stroke="rgba(255,255,255,0.65)"
-            stroke-width="2"/>
+            fill="url(#g_body)"
+            stroke="rgba(255,255,255,0.6)" stroke-width="2"/>
 
-      <!-- Decorative pink ribbon -->
-      <rect x="56" y="170" width="268" height="26" fill="url(#g_ribbon)" opacity="0.9"/>
-      <text x="190" y="188" text-anchor="middle"
-            font-family="Cormorant Garamond, serif"
-            font-style="italic" font-weight="600"
-            font-size="16" fill="white" letter-spacing="2.5">k.praewa</text>
-      <!-- Little hearts on the ribbon ends -->
-      <path d="M 76 183 c -3,-4 -8,-2 -8,2 c 0,3 3,5 8,9 c 5,-4 8,-6 8,-9 c 0,-4 -5,-6 -8,-2 z" fill="rgba(255,255,255,0.7)"/>
-      <path d="M 304 183 c -3,-4 -8,-2 -8,2 c 0,3 3,5 8,9 c 5,-4 8,-6 8,-9 c 0,-4 -5,-6 -8,-2 z" fill="rgba(255,255,255,0.7)"/>
+      <!-- Bottom inner shadow (gives depth to the floor of the jar) -->
+      <ellipse cx="190" cy="497" rx="118" ry="9" fill="rgba(0,0,0,0.18)"/>
+      <ellipse cx="190" cy="503" rx="105" ry="4" fill="rgba(0,0,0,0.12)"/>
 
-      <!-- Vertical shine highlights -->
-      <path d="M 78 230 L 78 470" stroke="url(#g_shine)" stroke-width="7" opacity="0.55"/>
-      <path d="M 305 240 L 305 460" stroke="url(#g_shine)" stroke-width="4" opacity="0.35"/>
+      <!-- Strong left vertical highlight -->
+      <path d="M 78 130 L 78 478" stroke="url(#g_shine)" stroke-width="6" opacity="0.85"/>
+      <!-- Thin secondary left highlight -->
+      <path d="M 90 160 L 90 460" stroke="rgba(255,255,255,0.18)" stroke-width="1.5"/>
 
-      <!-- Star sparkles -->
-      <g fill="rgba(255,255,255,0.55)">
-        <path d="M 100 260 l 2 -6 l 2 6 l 6 2 l -6 2 l -2 6 l -2 -6 l -6 -2 z"/>
-        <path d="M 290 320 l 1.5 -4.5 l 1.5 4.5 l 4.5 1.5 l -4.5 1.5 l -1.5 4.5 l -1.5 -4.5 l -4.5 -1.5 z"/>
-        <path d="M 110 420 l 1 -3 l 1 3 l 3 1 l -3 1 l -1 3 l -1 -3 l -3 -1 z"/>
-      </g>
+      <!-- Right highlight -->
+      <path d="M 302 160 L 302 460" stroke="url(#g_shine)" stroke-width="3" opacity="0.55"/>
+      <path d="M 288 200 L 288 440" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
+
+      <!-- Top inner reflection (between neck and body) -->
+      <path d="M 78 116 Q 190 124 302 116" stroke="rgba(255,255,255,0.25)" stroke-width="1" fill="none"/>
     </svg>
 
     <!-- ========== Lab Erlenmeyer flask ========== -->
@@ -593,8 +597,9 @@
     const w = jarContent.clientWidth;
     const h = jarContent.clientHeight;
     const isLab = stage.classList.contains('theme-lab');
-    let best = null;
-    for (let i = 0; i < 30; i++) {
+    const candidates = [];
+
+    for (let i = 0; i < 40; i++) {
       let centerX;
       if (isLab) {
         centerX = w * 0.5 + (Math.random() - 0.5) * w * 0.88;
@@ -607,7 +612,6 @@
       const top = findStackY(centerX, size);
 
       if (isLab) {
-        // Enforce flask cone shape at the chosen Y
         const cy = top + size / 2;
         const yRatio = Math.max(0, Math.min(1, cy / h));
         const halfwidth = 0.13 + (0.50 - 0.13) * yRatio;
@@ -615,11 +619,23 @@
         const maxCx = (0.5 + halfwidth) * w;
         if (centerX < minCx || centerX > maxCx) continue;
       }
-      if (!best || top > best.top) best = { left, top, size };
-      // Prefer pretty fast — first valid is fine for randomness
-      if (best) return best;
+      candidates.push({ left, top, size });
     }
-    return best || { left: w / 2 - size / 2, top: 0, size };
+
+    if (!candidates.length) {
+      return { left: w / 2 - size / 2, top: 0, size };
+    }
+
+    // Sort by Y descending — biggest Y = deepest in the jar = preferred so
+    // the bottom fills up first before the stack starts climbing.
+    candidates.sort((a, b) => b.top - a.top);
+
+    // Bias toward the best (deepest) candidate but keep enough randomness
+    // that gifts spread sideways naturally instead of forming a tower.
+    const pickFrom = Math.min(5, candidates.length);
+    const r = Math.pow(Math.random(), 2.4);  // weighted toward 0 (best)
+    const idx = Math.floor(r * pickFrom);
+    return candidates[idx];
   }
 
   function spawnGift(gift, w, h, silent = false) {
@@ -665,8 +681,8 @@
     const placement = pickPlacement(size);
     const left = placement.left;
     const landY = placement.top;
-    const startR = (-30 + Math.random() * 60);
-    const landR  = (-20 + Math.random() * 40) * 0.5;   // softer rotation so stacks read cleanly
+    const startR = (-20 + Math.random() * 40);
+    const landR  = (-12 + Math.random() * 24) * 0.4;   // very soft so the pile reads as solid objects
 
     el.style.left = left + 'px';
     el.style.top = '0px';
