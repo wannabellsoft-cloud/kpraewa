@@ -118,50 +118,57 @@ let conn = null;
 let reconnectTimer = null;
 const dumpedSampleForName = new Set(); // gift names whose raw JSON we've dumped once
 
-// Always return a single string URL (never an array). The connector's
-// getPreferredPictureFormat can return either, and if we let an array
-// through it gets JSON-serialized + later coerced to "url1,url2" in the
-// browser — invalid URL, image fails.
-function ensureString(v) {
+// Coerce anything (string / array / CSV / object with urls) into a single clean URL.
+function coerceUrl(v) {
   if (!v) return null;
   if (Array.isArray(v)) {
-    for (const x of v) { const s = ensureString(x); if (s) return s; }
+    for (const x of v) { const s = coerceUrl(x); if (s) return s; }
     return null;
   }
-  if (typeof v === 'string' && /^https?:\/\//i.test(v)) return v;
+  if (typeof v === 'string') {
+    const trimmed = v.trim();
+    // Some TikTok responses give a comma-separated list of mirror URLs.
+    // Pick the first valid https one.
+    if (trimmed.includes(',http')) {
+      const parts = trimmed.split(/,(?=https?:\/\/)/i);
+      for (const p of parts) {
+        const s = coerceUrl(p);
+        if (s) return s;
+      }
+      return null;
+    }
+    if (/^https?:\/\/\S+$/i.test(trimmed)) return trimmed;
+    return null;
+  }
+  if (typeof v === 'object') {
+    // Object with url-ish fields
+    return coerceUrl(
+      v.urlList ?? v.url_list ?? v.urls ?? v.giftPictureUrl
+      ?? v.url ?? v.uri ?? v.thumb?.urlList ?? v.image?.urlList
+    );
+  }
   return null;
 }
 
 function pickUrl(imgObj) {
   if (!imgObj) return null;
-  const direct = ensureString(imgObj);
-  if (direct) return direct;
   try {
     if (typeof getPreferredPictureFormat === 'function') {
       const u = getPreferredPictureFormat(imgObj);
-      const s = ensureString(u);
+      const s = coerceUrl(u);
       if (s) return s;
     }
   } catch {}
-  return ensureString(
-    imgObj?.urlList?.[0]
-    || imgObj?.url_list?.[0]
-    || imgObj?.urls?.[0]
-    || imgObj?.giftPictureUrl
-    || imgObj?.url
-    || imgObj?.uri
-    || imgObj?.thumb?.urlList?.[0]
-    || imgObj?.urlList
-    || imgObj?.url_list
-    || imgObj?.urls
-  );
+  return coerceUrl(imgObj);
 }
 
 // Deep walk: find the first http(s) URL pointing at a tiktok cdn anywhere in the object.
 function deepFindTikTokUrl(obj, depth = 0) {
-  if (!obj || depth > 5) return null;
+  if (!obj || depth > 6) return null;
   if (typeof obj === 'string') {
-    if (/^https?:\/\/[^"]*(tiktokcdn|tiktok|byteoversea)/i.test(obj)) return obj;
+    // Could be a single URL or a CSV. Coerce first, then sanity check it's a tiktok cdn.
+    const u = coerceUrl(obj);
+    if (u && /(tiktokcdn|tiktok|byteoversea|webcast)/i.test(u)) return u;
     return null;
   }
   if (Array.isArray(obj)) {
@@ -204,8 +211,10 @@ function extractGift(data) {
                || data.giftDetails?.extendedGiftInfo
                || null;
 
+  // Strategy: try specific known paths first, then a deep search across the
+  // whole payload — handles whatever shape this connector version emits.
   const giftPictureUrl =
-       directGiftUrl
+       coerceUrl(directGiftUrl)
     || pickUrl(extInfo?.image)
     || pickUrl(extInfo?.icon)
     || pickUrl(extInfo?.thumbnail)
@@ -219,6 +228,7 @@ function extractGift(data) {
     || deepFindTikTokUrl(extInfo)
     || deepFindTikTokUrl(data.giftDetails)
     || deepFindTikTokUrl(data.gift)
+    || deepFindTikTokUrl(data)
     || null;
 
   const profilePictureUrl =
