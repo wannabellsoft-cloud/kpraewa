@@ -535,16 +535,25 @@ async function sendTestGift(g) {
   } catch (e) { toast('Failed: ' + e.message, true); }
 }
 
+// Public TikTok-style gift PNGs to confirm the image pipeline.
+const TEST_IMG = {
+  rose:    'https://p19-webcast.tiktokcdn.com/webcast-va/eba3a9bb85c33e017f3648eaf88d7189~tplv-obj.image',
+  star:    'https://p19-webcast.tiktokcdn.com/webcast-va/2cd602e54a9ff855d0a0e0eaf6c2dfe7~tplv-obj.image',
+  diamond: 'https://p19-webcast.tiktokcdn.com/webcast-va/b89c9aedc66e158c0d7c1f72bd45e2f1~tplv-obj.image'
+};
 $('#testGiftRose').addEventListener('click', () => sendTestGift({
   giftName: 'Rose', giftType: 'rose', repeatCount: 1, diamondCount: 1,
+  giftPictureUrl: TEST_IMG.rose,
   uniqueId: 'tester', nickname: 'Tester'
 }));
 $('#testGiftStar').addEventListener('click', () => sendTestGift({
   giftName: 'Star', giftType: 'star', repeatCount: 5, diamondCount: 1,
+  giftPictureUrl: TEST_IMG.star,
   uniqueId: 'tester', nickname: 'Tester'
 }));
 $('#testGiftDiamond').addEventListener('click', () => sendTestGift({
   giftName: 'Diamond', giftType: 'diamond', repeatCount: 10, diamondCount: 5,
+  giftPictureUrl: TEST_IMG.diamond,
   uniqueId: 'tester', nickname: 'Tester'
 }));
 $('#clearJarBtn').addEventListener('click', async () => {

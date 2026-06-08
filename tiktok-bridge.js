@@ -118,17 +118,32 @@ let conn = null;
 let reconnectTimer = null;
 const dumpedSampleForName = new Set(); // gift names whose raw JSON we've dumped once
 
-// Walk a few likely paths to find a TikTok picture URL.
+// Always return a single string URL (never an array). The connector's
+// getPreferredPictureFormat can return either, and if we let an array
+// through it gets JSON-serialized + later coerced to "url1,url2" in the
+// browser — invalid URL, image fails.
+function ensureString(v) {
+  if (!v) return null;
+  if (Array.isArray(v)) {
+    for (const x of v) { const s = ensureString(x); if (s) return s; }
+    return null;
+  }
+  if (typeof v === 'string' && /^https?:\/\//i.test(v)) return v;
+  return null;
+}
+
 function pickUrl(imgObj) {
   if (!imgObj) return null;
-  if (typeof imgObj === 'string' && /^https?:\/\//i.test(imgObj)) return imgObj;
+  const direct = ensureString(imgObj);
+  if (direct) return direct;
   try {
     if (typeof getPreferredPictureFormat === 'function') {
       const u = getPreferredPictureFormat(imgObj);
-      if (u) return u;
+      const s = ensureString(u);
+      if (s) return s;
     }
   } catch {}
-  return (
+  return ensureString(
     imgObj?.urlList?.[0]
     || imgObj?.url_list?.[0]
     || imgObj?.urls?.[0]
@@ -136,7 +151,9 @@ function pickUrl(imgObj) {
     || imgObj?.url
     || imgObj?.uri
     || imgObj?.thumb?.urlList?.[0]
-    || null
+    || imgObj?.urlList
+    || imgObj?.url_list
+    || imgObj?.urls
   );
 }
 
