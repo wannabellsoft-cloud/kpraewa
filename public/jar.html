@@ -140,15 +140,18 @@
   }
   .gift.has-image {
     background: transparent !important;
-    border-radius: 12px;
-    box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+    border-radius: 0;
+    box-shadow: none;
+    overflow: visible;            /* let drop-shadow extend beyond the box */
   }
   .gift.has-image img {
     width: 100%; height: 100%;
     object-fit: contain;
     border-radius: 0;
     display: block;
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
+    /* drop-shadow follows the PNG alpha, so the shadow traces the real
+       gift silhouette instead of an ugly square halo */
+    filter: drop-shadow(0 6px 10px rgba(0,0,0,0.5));
   }
   .gift.no-image { color: rgba(0,0,0,0.55); }
   .gift.combo-2  { width: calc(var(--gift-base) * 1.18); height: calc(var(--gift-base) * 1.18); }
@@ -584,10 +587,18 @@
       el.textContent = s.glyph;
     }
 
-    // Diamond-based size bonus
+    // Diamond-based size bonus — applied via width/height (NOT transform),
+    // so the falling animation still owns the transform property.
+    let extraScale = 1;
     if (SETTINGS?.jar?.scaleByDiamonds && gift.diamondCount > 0) {
-      const bonus = Math.min(0.6, Math.log10(1 + gift.diamondCount) * 0.18);
-      el.style.transform = `scale(${1 + bonus})`;
+      extraScale = 1 + Math.min(0.6, Math.log10(1 + gift.diamondCount) * 0.18);
+    }
+    if (extraScale !== 1) {
+      // Read the post-combo size first, then apply diamond multiplier on top.
+      const baseW = el.offsetWidth || 56;
+      const baseH = el.offsetHeight || 56;
+      el.style.width  = (baseW * extraScale) + 'px';
+      el.style.height = (baseH * extraScale) + 'px';
     }
 
     const size = el.offsetWidth || 56;
@@ -595,14 +606,13 @@
     const baseLand = h - size - 8;
     const wobble = Math.random() * Math.min(180, h - 200);
     const landY = baseLand - wobble * 0.4;
+    const startR = (-30 + Math.random() * 60);
+    const landR  = (-20 + Math.random() * 40);
 
-    // For the lab flask, narrow at the top and widening towards the bottom.
-    // Constrain spawn X so gifts always land inside the visible cone.
     const isLab = stage.classList.contains('theme-lab');
     let minX, maxX;
     if (isLab) {
       const yRatio = Math.max(0, Math.min(1, landY / h));
-      // Cone half-width: 13% at the very top, 50% at the bottom
       const halfwidth = 0.13 + (0.50 - 0.13) * yRatio;
       minX = (0.5 - halfwidth) * w + padX;
       maxX = (0.5 + halfwidth) * w - size - padX;
@@ -615,13 +625,16 @@
     el.style.left = left + 'px';
     el.style.top = '0px';
     el.style.setProperty('--land-y', landY + 'px');
-    el.style.setProperty('--start-r', (-30 + Math.random() * 60) + 'deg');
-    el.style.setProperty('--land-r', (-20 + Math.random() * 40) + 'deg');
+    el.style.setProperty('--start-r', startR + 'deg');
+    el.style.setProperty('--land-r', landR + 'deg');
     el.style.setProperty('--fall-dur', (1.1 + Math.random() * 0.6) + 's');
 
     jarContent.appendChild(el);
 
+    // Persist the final transform inline BEFORE removing .falling, otherwise
+    // the keyframe-driven transform reverts and the gift snaps back to top.
     el.addEventListener('animationend', () => {
+      el.style.transform = `translateY(${landY}px) rotate(${landR}deg)`;
       el.classList.remove('falling');
     }, { once: true });
 

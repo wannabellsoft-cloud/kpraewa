@@ -110,7 +110,12 @@ async function postGift(payload) {
     return;
   }
   consecutivePostFails = 0;
-  ok(`> Forwarded ${payload.giftName} ×${payload.repeatCount} from ${payload.nickname}`);
+  const data = await r.json().catch(() => null);
+  if (data?.filtered) {
+    log(`  · filtered: ${payload.giftName} ×${payload.repeatCount} (${data.reason || 'below min'})`);
+  } else {
+    ok(`> Forwarded ${payload.giftName} ×${payload.repeatCount} from ${payload.nickname}`);
+  }
 }
 
 // ---------- TikTok Live ----------

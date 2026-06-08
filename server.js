@@ -307,12 +307,29 @@ function createApp() {
   // Auth required so randoms can't spam the jar.
   app.post('/api/jar/gift', auth.requireAuth, async (req, res) => {
     const b = req.body || {};
+    const repeatCount = Math.max(1, Math.min(999, Number(b.repeatCount) || 1));
+    const diamondCount = Math.max(0, Math.min(99999, Number(b.diamondCount) || 0));
+
+    // Server-side filter: don't even broadcast cheap gifts. Saves Pusher
+    // quota and keeps the overlay/console clean from spam votes.
+    // Threshold is on TOTAL value (diamondCount × repeatCount).
+    const settings = await storage.getSettings();
+    const minDiamonds = Number(settings.jar?.minDiamonds || 0);
+    const totalValue = diamondCount * repeatCount;
+    if (!b.test && minDiamonds > 0 && totalValue < minDiamonds) {
+      return res.json({
+        ok: true,
+        filtered: true,
+        reason: `${totalValue} diamonds below jar.minDiamonds=${minDiamonds}`
+      });
+    }
+
     const gift = {
       id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
       giftName: String(b.giftName || 'Gift').slice(0, 40),
       giftType: String(b.giftType || b.giftName || 'gift').toLowerCase().slice(0, 20),
-      repeatCount: Math.max(1, Math.min(999, Number(b.repeatCount) || 1)),
-      diamondCount: Math.max(0, Math.min(99999, Number(b.diamondCount) || 0)),
+      repeatCount,
+      diamondCount,
       uniqueId: String(b.uniqueId || 'anon').slice(0, 40),
       nickname: String(b.nickname || b.uniqueId || 'Someone').slice(0, 40),
       giftPictureUrl: typeof b.giftPictureUrl === 'string' ? b.giftPictureUrl.slice(0, 500) : null,
