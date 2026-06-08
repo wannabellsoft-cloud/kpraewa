@@ -370,10 +370,39 @@ function scheduleReconnect(ms) {
   }, ms);
 }
 
-start();
+// ---- Live handle polling ----
+// The widget can change the target TikTok handle at runtime by POSTing to
+// /api/jar/handle. We poll that endpoint every ~15s; if it differs from
+// the one we're connected to, drop the current connection and reconnect.
+async function syncHandleFromApi() {
+  try {
+    const r = await fetch(opts.api + '/api/jar/handle');
+    if (!r.ok) return;
+    const data = await r.json().catch(() => null);
+    if (!data?.handle) return;
+    const remote = data.handle.startsWith('@') ? data.handle : '@' + data.handle;
+    if (remote && remote !== handle) {
+      log(`Handle change detected: ${handle} → ${remote}. Reconnecting…`);
+      handle = remote;
+      try { conn?.disconnect?.(); } catch {}
+      conn = null;
+      clearTimeout(reconnectTimer);
+      setTimeout(start, 1500);
+    }
+  } catch { /* silent */ }
+}
+
+(async () => {
+  // Prime handle from API before first connect (overrides env)
+  await syncHandleFromApi();
+  start();
+})();
+
+// Poll every 15s
+setInterval(syncHandleFromApi, 15_000);
 
 // Heartbeat — proves the script is still alive
-setInterval(() => log(`(heartbeat) cookie=${SESSION_COOKIE ? 'yes' : 'NO'} postFails=${consecutivePostFails}`), 60_000);
+setInterval(() => log(`(heartbeat) handle=${handle} cookie=${SESSION_COOKIE ? 'yes' : 'NO'} postFails=${consecutivePostFails}`), 60_000);
 
 process.on('SIGINT', () => { log('Shutting down…'); conn?.disconnect?.(); process.exit(0); });
 process.on('uncaughtException', e => err('Uncaught:', e?.message || e));

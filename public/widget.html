@@ -319,14 +319,15 @@
         <code>node tiktok-bridge.js @yourhandle</code> on this PC to forward live gifts.
       </p>
 
-      <div class="grid-2">
-        <div class="field">
-          <label class="field-label">TikTok handle</label>
-          <input type="text" id="tiktokHandleInput" placeholder="@k.praewa" />
-        </div>
-        <div class="field" style="display: flex; flex-direction: column; justify-content: flex-end;">
-          <button class="btn block" id="copyBridgeCmd" type="button">Copy bridge command</button>
-        </div>
+      <div class="field">
+        <label class="field-label">TikTok handle <span id="handleCurrent" style="color: var(--ink-2); font-weight: 400; text-transform: none; letter-spacing: 0; margin-left: 8px;"></span></label>
+        <input type="text" id="tiktokHandleInput" placeholder="@k.praewa" />
+        <div class="hint">Bridge polls this every 15 s. After Apply, watch Railway logs for "Handle change detected".</div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px;">
+        <button class="btn" id="applyHandleBtn" type="button">Apply to live bridge</button>
+        <button class="btn ghost" id="copyBridgeCmd" type="button">Copy bridge command</button>
       </div>
 
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
@@ -568,6 +569,41 @@ $('#copyBridgeCmd').addEventListener('click', () => {
   const cmd = `node tiktok-bridge.js ${handle} --api ${origin} --user Admin --pass YOUR_PASSWORD`;
   navigator.clipboard.writeText(cmd).then(() => toast('Command copied'));
 });
+
+// ---- Live handle switching ----
+async function loadCurrentHandle() {
+  try {
+    const r = await fetch('/api/jar/handle');
+    const data = await r.json();
+    const h = data?.handle || '';
+    $('#handleCurrent').textContent = h ? `(currently: ${h})` : '(not set — using bridge env var)';
+    if (h && !$('#tiktokHandleInput').value) $('#tiktokHandleInput').value = h;
+  } catch {}
+}
+
+$('#applyHandleBtn').addEventListener('click', async () => {
+  const handle = $('#tiktokHandleInput').value.trim();
+  if (!handle) { toast('Enter a TikTok handle first', true); return; }
+  const btn = $('#applyHandleBtn');
+  btn.disabled = true; btn.textContent = 'Applying…';
+  try {
+    const r = await fetch('/api/jar/handle', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ handle })
+    });
+    const data = await r.json();
+    if (!r.ok || !data.ok) throw new Error(data.error || 'Failed');
+    toast(`Applied: ${data.handle} (bridge reconnects in ≤15s)`);
+    $('#handleCurrent').textContent = `(currently: ${data.handle})`;
+  } catch (e) {
+    toast('Failed: ' + e.message, true);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Apply to live bridge';
+  }
+});
+
+loadCurrentHandle();
 
 // Realtime donation hook is bound up top when RealtimeClient connects
 

@@ -330,6 +330,24 @@ function createApp() {
     res.json({ ok: true });
   });
 
+  // ---- Jar: live TikTok handle (bridge polls this every ~15s) ----
+  app.get('/api/jar/handle', async (_req, res) => {
+    const s = await storage.getSettings();
+    res.json({ handle: s.jarHandle || '' });
+  });
+
+  app.post('/api/jar/handle', auth.requireAuth, async (req, res) => {
+    let h = String(req.body?.handle || '').trim();
+    if (!h) return res.status(400).json({ ok: false, error: 'Missing handle' });
+    h = h.startsWith('@') ? h : '@' + h;
+    if (!/^@[\w._-]{2,40}$/i.test(h)) return res.status(400).json({ ok: false, error: 'Bad handle format' });
+    const s = await storage.getSettings();
+    s.jarHandle = h;
+    await storage.setSettings(s);
+    await realtime.emit('jar:handle-changed', { handle: h });
+    res.json({ ok: true, handle: h });
+  });
+
   // ---- File uploads ----
   app.post('/api/upload-sound', auth.requireAuth, async (req, res) => {
     const { audio } = req.body || {};
