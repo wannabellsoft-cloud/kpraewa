@@ -83,22 +83,22 @@
     filter: drop-shadow(0 30px 40px rgba(0,0,0,0.35));
   }
 
-  /* Glass-theme gift area — round chubby jar.
-     Starts BELOW the bow + chain + heart pendant (~y=345) and clips
-     to the rounded bottom-half body so gifts always sit inside glass. */
+  /* Glass-theme gift area — round bulbous jar.
+     Starts below the heart pendant (y=350) and the polygon clip-path
+     traces the bottom half of the round body. */
   .jar-content {
     position: absolute;
-    left: 56px;
-    right: 56px;
-    top: 345px;
-    bottom: 36px;
+    left: 52px;
+    right: 52px;
+    top: 350px;
+    bottom: 32px;
     overflow: hidden;
     clip-path: polygon(
       0% 0%, 100% 0%,
-      100% 56%,
-      92% 80%, 78% 95%, 60% 100%,
-      40% 100%, 22% 95%, 8% 80%,
-      0% 56%
+      100% 52%,
+      94% 78%, 80% 94%, 62% 100%,
+      38% 100%, 20% 94%, 6% 78%,
+      0% 52%
     );
     z-index: 2;
   }
@@ -284,206 +284,231 @@
 
   <div class="jar-container" id="jarContainer">
 
-    <!-- ========== Open-mouth round jar (watercolor sketch style) ========== -->
+    <!-- ========== Round bulbous jar with pearled collar (watercolor) ========== -->
     <svg class="jar-svg theme-svg theme-glass" viewBox="0 0 380 540" xmlns="http://www.w3.org/2000/svg">
       <defs>
-        <!-- Pink-tinted glass interior fade -->
-        <radialGradient id="g_glassInner" cx="50%" cy="58%" r="60%">
-          <stop offset="0%"  stop-color="rgba(255,225,235,0.04)"/>
-          <stop offset="70%" stop-color="rgba(255,200,215,0.14)"/>
-          <stop offset="100%" stop-color="rgba(240,150,180,0.28)"/>
+        <radialGradient id="g_glassInner" cx="50%" cy="55%" r="58%">
+          <stop offset="0%"  stop-color="rgba(255,225,235,0.06)"/>
+          <stop offset="65%" stop-color="rgba(255,205,220,0.15)"/>
+          <stop offset="100%" stop-color="rgba(240,150,180,0.32)"/>
         </radialGradient>
-        <!-- Bow main fill (soft pink) -->
         <linearGradient id="g_bow" x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0%"   stop-color="#ffd6e0"/>
+          <stop offset="0%"   stop-color="#ffdce5"/>
           <stop offset="100%" stop-color="#f29ab1"/>
         </linearGradient>
-        <!-- Knot/darker bow fill -->
         <linearGradient id="g_knot" x1="0" x2="0" y1="0" y2="1">
           <stop offset="0%"   stop-color="#f29ab1"/>
           <stop offset="100%" stop-color="#c8657d"/>
         </linearGradient>
-        <!-- Heart gradient -->
         <linearGradient id="g_heart" x1="0" x2="1" y1="0" y2="1">
           <stop offset="0%"   stop-color="#ffabc2"/>
           <stop offset="100%" stop-color="#d4677c"/>
         </linearGradient>
-        <!-- Side pink wash for body shading -->
         <linearGradient id="g_pinkWash" x1="0" x2="0" y1="0" y2="1">
           <stop offset="0%"   stop-color="rgba(245,150,180,0)"/>
-          <stop offset="50%"  stop-color="rgba(245,150,180,0.35)"/>
+          <stop offset="50%"  stop-color="rgba(245,150,180,0.4)"/>
           <stop offset="100%" stop-color="rgba(245,150,180,0)"/>
         </linearGradient>
+        <radialGradient id="g_pearl" cx="35%" cy="32%" r="65%">
+          <stop offset="0%"   stop-color="#ffffff"/>
+          <stop offset="55%"  stop-color="#fde7ec"/>
+          <stop offset="100%" stop-color="#e6b8c4"/>
+        </radialGradient>
       </defs>
 
-      <!-- ====== Cylindrical-bulged body (drawn FIRST, behind everything) ====== -->
-      <path d="M 65 195
-               C 38 240 32 380 64 470
-               Q 82 510 132 510
-               L 248 510
-               Q 298 510 316 470
-               C 348 380 342 240 315 195
+      <!-- ====== Ground watercolor stain shadow under the jar ====== -->
+      <ellipse cx="190" cy="522" rx="155" ry="12" fill="rgba(245,180,200,0.32)"/>
+      <ellipse cx="190" cy="527" rx="120" ry="5"  fill="rgba(245,180,200,0.45)"/>
+
+      <!-- ====== Round bulbous body (widest in middle) ====== -->
+      <path d="M 78 192
+               C 32 232 22 360 40 460
+               Q 55 510 110 510
+               L 270 510
+               Q 325 510 340 460
+               C 358 360 348 232 302 192
                Z"
             fill="url(#g_glassInner)"
-            stroke="#c47585" stroke-width="2.4" stroke-linejoin="round"/>
+            stroke="#c47585" stroke-width="2.5" stroke-linejoin="round"/>
 
-      <!-- Sketchy double stroke (left + right edges) for watercolor feel -->
-      <path d="M 68 205 C 42 248 36 380 68 462"
+      <!-- Double offset sketchy stroke for watercolor feel -->
+      <path d="M 82 202 C 40 240 30 360 48 454"
             fill="none" stroke="#e89bb0" stroke-width="1" opacity="0.55"/>
-      <path d="M 312 205 C 338 248 344 380 312 462"
+      <path d="M 298 202 C 340 240 350 360 332 454"
             fill="none" stroke="#e89bb0" stroke-width="1" opacity="0.55"/>
 
-      <!-- Pink wash on left side -->
-      <path d="M 52 250 Q 36 350 70 460" fill="none"
-            stroke="url(#g_pinkWash)" stroke-width="22" opacity="0.5"/>
-      <!-- Pink wash on right -->
-      <path d="M 328 250 Q 344 350 310 460" fill="none"
-            stroke="url(#g_pinkWash)" stroke-width="22" opacity="0.5"/>
+      <!-- Pink wash on each curve -->
+      <path d="M 58 240 Q 40 360 76 458" fill="none"
+            stroke="url(#g_pinkWash)" stroke-width="24" opacity="0.55"/>
+      <path d="M 322 240 Q 340 360 304 458" fill="none"
+            stroke="url(#g_pinkWash)" stroke-width="24" opacity="0.55"/>
 
-      <!-- Bottom inner ellipses (gives the floor depth) -->
-      <ellipse cx="190" cy="478" rx="105" ry="8" fill="rgba(245,166,187,0.4)"/>
-      <ellipse cx="190" cy="488" rx="86" ry="4" fill="rgba(245,166,187,0.28)"/>
-      <ellipse cx="190" cy="495" rx="65" ry="2.5" fill="rgba(245,166,187,0.2)"/>
+      <!-- Bottom interior layered ellipses for depth -->
+      <ellipse cx="190" cy="476" rx="118" ry="10" fill="rgba(245,166,187,0.42)"/>
+      <ellipse cx="190" cy="486" rx="98"  ry="5"  fill="rgba(245,166,187,0.3)"/>
+      <ellipse cx="190" cy="495" rx="76"  ry="3"  fill="rgba(245,166,187,0.2)"/>
 
-      <!-- Glass white highlights -->
-      <path d="M 84 240 Q 72 340 96 440"
+      <!-- Glass highlights -->
+      <path d="M 92 252 Q 76 350 108 440"
             fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="4" stroke-linecap="round" opacity="0.75"/>
-      <path d="M 100 270 Q 96 350 105 410"
-            fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="1.4"/>
-      <path d="M 296 250 Q 308 340 290 430"
+      <path d="M 108 282 Q 106 350 118 410"
+            fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.4"/>
+      <path d="M 286 250 Q 302 350 272 440"
             fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="2.2" opacity="0.75"/>
 
-      <!-- ====== Open mouth ====== -->
-      <!-- Outer rim ellipse (the rim itself, seen edge-on) -->
-      <ellipse cx="190" cy="110" rx="130" ry="20"
-               fill="rgba(255,240,245,0.35)"
-               stroke="#c47585" stroke-width="2.4"/>
-      <!-- Inner rim (depth into the jar) -->
-      <ellipse cx="190" cy="120" rx="118" ry="14"
-               fill="rgba(245,180,200,0.18)"
-               stroke="#c47585" stroke-width="1.6" opacity="0.75"/>
-      <!-- Innermost (deeper) line -->
-      <ellipse cx="190" cy="125" rx="108" ry="10"
-               fill="none" stroke="#e89bb0" stroke-width="1" opacity="0.55"/>
+      <!-- Tiny inner sparkle dots -->
+      <circle cx="135" cy="385" r="1.8" fill="rgba(255,255,255,0.7)"/>
+      <circle cx="245" cy="430" r="1.5" fill="rgba(255,255,255,0.6)"/>
+      <circle cx="160" cy="455" r="1.4" fill="rgba(255,255,255,0.6)"/>
+      <circle cx="225" cy="380" r="1.2" fill="rgba(255,255,255,0.5)"/>
 
-      <!-- ====== Screw threads (3 sketchy curves on the neck) ====== -->
-      <path d="M 60 152 Q 80 160 190 162 Q 300 160 320 152"
+      <!-- ====== Wide open mouth ====== -->
+      <ellipse cx="190" cy="100" rx="118" ry="22"
+               fill="rgba(255,240,245,0.42)"
+               stroke="#c47585" stroke-width="2.4"/>
+      <ellipse cx="190" cy="108" rx="106" ry="15"
+               fill="rgba(245,200,215,0.3)"
+               stroke="#c47585" stroke-width="1.5" opacity="0.75"/>
+      <path d="M 80 100 Q 190 132 300 100"
+            fill="none" stroke="#c47585" stroke-width="1.4" opacity="0.6"/>
+
+      <!-- Three sketchy screw-thread curves -->
+      <path d="M 76 138 Q 100 146 190 148 Q 280 146 304 138"
             fill="none" stroke="#c47585" stroke-width="1.6" opacity="0.7"/>
-      <path d="M 56 175 Q 80 184 190 186 Q 300 184 324 175"
+      <path d="M 74 158 Q 100 167 190 169 Q 280 167 306 158"
             fill="none" stroke="#c47585" stroke-width="1.6" opacity="0.6"/>
-      <path d="M 58 196 Q 80 204 190 206 Q 300 204 322 196"
+      <path d="M 78 178 Q 100 186 190 188 Q 280 186 302 178"
             fill="none" stroke="#c47585" stroke-width="1.6" opacity="0.5"/>
 
-      <!-- ====== Ruffled collar around neck ====== -->
-      <path d="M 75 200
-               L 305 200
-               Q 312 200 312 210
-               Q 312 232 305 240
-               Q 295 244 282 244
-               Q 278 252 270 252
-               Q 268 248 262 248
-               Q 258 252 250 252
-               Q 248 246 242 246
-               L 138 246
-               Q 132 246 130 252
-               Q 122 252 118 248
-               Q 112 252 108 252
-               Q 100 252 96 244
-               Q 80 244 72 240
-               Q 68 232 68 210
-               Q 68 200 75 200 Z"
+      <!-- ====== Ribbon collar with PEARLS ====== -->
+      <path d="M 74 195
+               L 306 195
+               Q 314 198 314 208
+               Q 314 230 308 240
+               Q 296 246 282 246
+               Q 276 254 268 254
+               Q 264 250 258 250
+               Q 254 254 246 254
+               Q 242 248 236 248
+               L 144 248
+               Q 138 248 134 254
+               Q 126 254 122 250
+               Q 116 254 112 254
+               Q 104 254 98 246
+               Q 84 246 72 240
+               Q 66 230 66 208
+               Q 66 198 74 195 Z"
             fill="url(#g_bow)"
             stroke="#c8657d" stroke-width="2" stroke-linejoin="round"/>
+
       <!-- Collar pleat lines -->
       <g stroke="#c8657d" stroke-width="1" opacity="0.6">
-        <path d="M 95 205 Q 96 225 99 244" fill="none"/>
-        <path d="M 115 205 Q 116 225 119 248" fill="none"/>
-        <path d="M 270 205 Q 269 225 266 248" fill="none"/>
-        <path d="M 290 205 Q 289 225 286 244" fill="none"/>
+        <path d="M 92 215 Q 93 230 96 248" fill="none"/>
+        <path d="M 114 215 Q 115 230 118 252" fill="none"/>
+        <path d="M 268 215 Q 267 230 264 252" fill="none"/>
+        <path d="M 290 215 Q 289 230 286 248" fill="none"/>
       </g>
-      <!-- Collar shading band -->
-      <path d="M 80 225 Q 190 232 300 225"
-            fill="none" stroke="rgba(168,85,108,0.35)" stroke-width="2"/>
+      <!-- Collar mid shading band -->
+      <path d="M 80 223 Q 190 230 300 223"
+            fill="none" stroke="rgba(168,85,108,0.32)" stroke-width="2"/>
 
-      <!-- ====== Bow (left wing) — wider and more flat ====== -->
-      <path d="M 188 215
-               C 150 200  98 220  90 258
-               C 86 285 110 296 142 292
-               C 168 289 188 270 188 245 Z"
+      <!-- ✨ Pearl row along the top of the collar -->
+      <g>
+        <circle cx="84"  cy="206" r="3.2" fill="url(#g_pearl)" stroke="#c8657d" stroke-width="0.4"/>
+        <circle cx="103" cy="206" r="3.2" fill="url(#g_pearl)" stroke="#c8657d" stroke-width="0.4"/>
+        <circle cx="122" cy="206" r="3.2" fill="url(#g_pearl)" stroke="#c8657d" stroke-width="0.4"/>
+        <circle cx="141" cy="206" r="3.2" fill="url(#g_pearl)" stroke="#c8657d" stroke-width="0.4"/>
+        <circle cx="160" cy="206" r="3.2" fill="url(#g_pearl)" stroke="#c8657d" stroke-width="0.4"/>
+        <circle cx="220" cy="206" r="3.2" fill="url(#g_pearl)" stroke="#c8657d" stroke-width="0.4"/>
+        <circle cx="239" cy="206" r="3.2" fill="url(#g_pearl)" stroke="#c8657d" stroke-width="0.4"/>
+        <circle cx="258" cy="206" r="3.2" fill="url(#g_pearl)" stroke="#c8657d" stroke-width="0.4"/>
+        <circle cx="277" cy="206" r="3.2" fill="url(#g_pearl)" stroke="#c8657d" stroke-width="0.4"/>
+        <circle cx="296" cy="206" r="3.2" fill="url(#g_pearl)" stroke="#c8657d" stroke-width="0.4"/>
+      </g>
+
+      <!-- ====== Bow — left wing ====== -->
+      <path d="M 188 218
+               C 145 202 92 222 84 262
+               C 80 292 110 304 146 298
+               C 172 294 188 274 188 250 Z"
             fill="url(#g_bow)"
             stroke="#c8657d" stroke-width="2" stroke-linejoin="round"/>
-      <path d="M 122 248 Q 142 268 168 270"
+      <path d="M 118 254 Q 144 274 172 274"
             fill="none" stroke="#c8657d" stroke-width="1.3" opacity="0.7"/>
-      <path d="M 100 245 Q 116 282 138 290"
-            fill="none" stroke="#c8657d" stroke-width="1" opacity="0.5"/>
+      <path d="M 94 252 Q 112 292 142 298"
+            fill="none" stroke="#c8657d" stroke-width="0.9" opacity="0.5"/>
 
-      <!-- ====== Bow (right wing) ====== -->
-      <path d="M 192 215
-               C 230 200 282 220 290 258
-               C 294 285 270 296 238 292
-               C 212 289 192 270 192 245 Z"
+      <!-- ====== Bow — right wing ====== -->
+      <path d="M 192 218
+               C 235 202 288 222 296 262
+               C 300 292 270 304 234 298
+               C 208 294 192 274 192 250 Z"
             fill="url(#g_bow)"
             stroke="#c8657d" stroke-width="2" stroke-linejoin="round"/>
-      <path d="M 258 248 Q 238 268 212 270"
+      <path d="M 262 254 Q 236 274 208 274"
             fill="none" stroke="#c8657d" stroke-width="1.3" opacity="0.7"/>
-      <path d="M 280 245 Q 264 282 242 290"
-            fill="none" stroke="#c8657d" stroke-width="1" opacity="0.5"/>
+      <path d="M 286 252 Q 268 292 238 298"
+            fill="none" stroke="#c8657d" stroke-width="0.9" opacity="0.5"/>
 
-      <!-- ====== Bow tails ====== -->
-      <path d="M 168 258
-               Q 156 308 152 348
-               L 170 350
-               L 184 320 Z"
-            fill="url(#g_bow)" stroke="#c8657d" stroke-width="2" stroke-linejoin="round"/>
-      <path d="M 212 258
-               Q 224 308 228 348
-               L 210 350
-               L 196 320 Z"
-            fill="url(#g_bow)" stroke="#c8657d" stroke-width="2" stroke-linejoin="round"/>
-      <!-- Tail shading -->
-      <path d="M 162 268 Q 158 308 162 344"
-            fill="none" stroke="#c8657d" stroke-width="0.9" opacity="0.55"/>
-      <path d="M 218 268 Q 222 308 218 344"
-            fill="none" stroke="#c8657d" stroke-width="0.9" opacity="0.55"/>
+      <!-- ====== Bow tails (notched ends) ====== -->
+      <path d="M 168 264
+               L 156 348
+               L 173 350
+               L 184 332
+               L 178 322
+               L 184 312 Z"
+            fill="url(#g_bow)"
+            stroke="#c8657d" stroke-width="2" stroke-linejoin="round"/>
+      <path d="M 212 264
+               L 224 348
+               L 207 350
+               L 196 332
+               L 202 322
+               L 196 312 Z"
+            fill="url(#g_bow)"
+            stroke="#c8657d" stroke-width="2" stroke-linejoin="round"/>
+      <path d="M 164 274 Q 162 312 164 342" fill="none" stroke="#c8657d" stroke-width="0.9" opacity="0.55"/>
+      <path d="M 216 274 Q 218 312 216 342" fill="none" stroke="#c8657d" stroke-width="0.9" opacity="0.55"/>
 
       <!-- ====== Center knot ====== -->
-      <ellipse cx="190" cy="248" rx="22" ry="26"
+      <ellipse cx="190" cy="252" rx="22" ry="26"
                fill="url(#g_knot)" stroke="#a8556c" stroke-width="2"/>
-      <!-- Knot side seams -->
-      <path d="M 176 226 Q 176 250 176 270" stroke="#a8556c" stroke-width="1" fill="none" opacity="0.5"/>
-      <path d="M 204 226 Q 204 250 204 270" stroke="#a8556c" stroke-width="1" fill="none" opacity="0.5"/>
+      <path d="M 176 230 Q 176 254 176 274" stroke="#a8556c" stroke-width="1" fill="none" opacity="0.5"/>
+      <path d="M 204 230 Q 204 254 204 274" stroke="#a8556c" stroke-width="1" fill="none" opacity="0.5"/>
 
-      <!-- ====== Heart on the knot ====== -->
-      <path d="M 190 244
-               c -7,-8 -18,-3 -14,6
-               c 4,8 14,15 14,15
-               c 0,0 10,-7 14,-15
-               c 4,-9 -7,-14 -14,-6 Z"
+      <!-- Heart on knot -->
+      <path d="M 190 248
+               c -7,-9 -18,-3 -14,7
+               c 4,9 14,15 14,15
+               c 0,0 10,-6 14,-15
+               c 4,-9 -7,-14 -14,-7 Z"
             fill="url(#g_heart)" stroke="#a8556c" stroke-width="1.5"/>
-      <ellipse cx="184" cy="248" rx="2.5" ry="4" fill="rgba(255,255,255,0.8)"/>
+      <ellipse cx="184" cy="252" rx="2.5" ry="4" fill="rgba(255,255,255,0.85)"/>
 
-      <!-- ====== Chain + pendant heart ====== -->
-      <line x1="190" y1="276" x2="190" y2="302"
+      <!-- Chain + pendant heart -->
+      <line x1="190" y1="280" x2="190" y2="306"
             stroke="#a8556c" stroke-width="1.5"/>
-      <ellipse cx="190" cy="304" rx="4.5" ry="3"
+      <ellipse cx="190" cy="308" rx="4.5" ry="3"
                fill="#f5d68a" stroke="#b48a3e" stroke-width="0.9"/>
-      <path d="M 190 312
+      <path d="M 190 316
                c -9,-11 -22,-4 -17,7
                c 4,9 17,20 17,20
                c 0,0 13,-11 17,-20
                c 5,-11 -8,-18 -17,-7 Z"
             fill="url(#g_heart)" stroke="#a8556c" stroke-width="1.4"/>
-      <ellipse cx="184" cy="322" rx="3" ry="5" fill="rgba(255,255,255,0.75)"/>
+      <ellipse cx="184" cy="326" rx="3" ry="5" fill="rgba(255,255,255,0.78)"/>
 
-      <!-- ====== Sparkles outside the jar ====== -->
-      <g fill="#f29ab1" opacity="0.8">
-        <path d="M 24 220 l 1.5 -5 l 1.5 5 l 5 1.5 l -5 1.5 l -1.5 5 l -1.5 -5 l -5 -1.5 z"/>
-        <path d="M 354 300 l 1.5 -5 l 1.5 5 l 5 1.5 l -5 1.5 l -1.5 5 l -1.5 -5 l -5 -1.5 z"/>
-        <path d="M 24 400 l 1 -3.5 l 1 3.5 l 3.5 1 l -3.5 1 l -1 3.5 l -1 -3.5 l -3.5 -1 z"/>
-        <path d="M 356 430 l 1 -3 l 1 3 l 3 1 l -3 1 l -1 3 l -1 -3 l -3 -1 z"/>
+      <!-- ====== Sparkles & tiny hearts around ====== -->
+      <g fill="#f5c64d" opacity="0.85">
+        <path d="M 38 130 l 2 -6 l 2 6 l 6 2 l -6 2 l -2 6 l -2 -6 l -6 -2 z"/>
+        <path d="M 340 130 l 2 -6 l 2 6 l 6 2 l -6 2 l -2 6 l -2 -6 l -6 -2 z"/>
+        <path d="M 50 280 l 1.2 -3.5 l 1.2 3.5 l 3.5 1.2 l -3.5 1.2 l -1.2 3.5 l -1.2 -3.5 l -3.5 -1.2 z"/>
+        <path d="M 332 280 l 1.2 -3.5 l 1.2 3.5 l 3.5 1.2 l -3.5 1.2 l -1.2 3.5 l -1.2 -3.5 l -3.5 -1.2 z"/>
       </g>
-      <g fill="#ffabc2" opacity="0.65">
-        <path d="M 14 320 c -2,-3 -6,-1.5 -5,1.5 c 1,2 5,4 5,5 c 0,0 4,-3 5,-5 c 1,-3 -3,-4.5 -5,-1.5 z"/>
+      <g fill="#ffabc2" opacity="0.75">
+        <path d="M 22 215 c -3,-4 -8,-2 -7,2 c 1,3 7,6 7,7 c 0,0 6,-4 7,-7 c 1,-4 -4,-6 -7,-2 z"/>
+        <path d="M 358 215 c -3,-4 -8,-2 -7,2 c 1,3 7,6 7,7 c 0,0 6,-4 7,-7 c 1,-4 -4,-6 -7,-2 z"/>
+        <path d="M 14 380 c -2,-3 -6,-1.5 -5,1.5 c 1,2 5,4 5,5 c 0,0 4,-3 5,-5 c 1,-3 -3,-4.5 -5,-1.5 z"/>
         <path d="M 366 380 c -2,-3 -6,-1.5 -5,1.5 c 1,2 5,4 5,5 c 0,0 4,-3 5,-5 c 1,-3 -3,-4.5 -5,-1.5 z"/>
       </g>
     </svg>
