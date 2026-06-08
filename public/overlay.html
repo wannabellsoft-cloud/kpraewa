@@ -70,16 +70,17 @@
 <body>
 <div id="alertSlot"></div>
 
-<script src="/socket.io/socket.io.js"></script>
+<script src="/assets/realtime-client.js"></script>
 <script>
 let SETTINGS = {};
 const queue = [];
 let playing = false;
 const slot = document.getElementById('alertSlot');
-const socket = io();
 
-socket.on('settings:update', (s) => { SETTINGS = s; });
-socket.on('donation', (d) => { queue.push(d); pump(); });
+RealtimeClient.connect().then(rt => {
+  rt.on('settings:update', (s) => { SETTINGS = s; });
+  rt.on('donation', (d) => { queue.push(d); pump(); });
+});
 
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));

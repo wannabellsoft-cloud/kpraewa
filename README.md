@@ -1,122 +1,116 @@
 # Donate System · k.praewa
 
-ระบบรับโดเนทพร้อม Alert + เสียงอ่าน (TTS) สำหรับ streamer
-ใช้กับธนาคารกสิกร เลขบัญชี **166-8-15077-9** ชื่อ **แพรวา คล้ำมีศรี**
+Donation alert system with EasySlip auto-verification, real-time OBS overlay, TTS readouts, and PromptPay/TrueMoney QR.
 
-## คุณสมบัติ
-
-- 💸 หน้า donor สำหรับผู้โดเนท พร้อมแสดง QR PromptPay + เลขบัญชี
-- ⚙️ หน้า Widget Settings ปรับแต่งสี / ฟอนต์ / เอฟเฟ็กต์ / ข้อความ / เสียง
-- 📺 หน้า Overlay สำหรับเสียบใน OBS Browser Source (พื้นหลังโปร่งใส)
-- 🔔 Alert เด้งขึ้นพร้อมเสียงเอฟเฟ็กต์
-- 🗣 TTS อ่านชื่อ + ข้อความผ่าน Google Translate TTS (ฟรี ไม่ต้องใช้ API key)
-- ⚡ Realtime ผ่าน Socket.IO — กดส่งปุ๊บ Alert ขึ้น OBS ปั๊บ
-- 📜 บันทึกประวัติ donation
+Designed to run **both locally (Node.js + Socket.IO)** and **on Vercel (serverless + Pusher + Vercel KV + Vercel Blob)**.
 
 ---
 
-## วิธีติดตั้งและรัน
+## Local development
 
-### 1) ติดตั้ง Node.js
-ดาวน์โหลด Node.js **v20 ขึ้นไป** จาก https://nodejs.org
-
-### 2) ติดตั้ง dependencies
-เปิด PowerShell ในโฟลเดอร์นี้แล้วรัน:
-```powershell
+```bash
 npm install
-```
-
-### 3) สตาร์ทเซิร์ฟเวอร์
-```powershell
+cp .env.example .env       # add your EASYSLIP_API_KEY
 npm start
 ```
 
-จะเห็นข้อความ:
-```
-  Donor page : http://localhost:3000/
-  Widget     : http://localhost:3000/widget
-  Overlay    : http://localhost:3000/overlay   (← ใส่ใน OBS Browser Source)
-```
+- Donor page: http://localhost:3000/
+- Widget console: http://localhost:3000/widget
+- OBS overlay: http://localhost:3000/overlay
 
-### 4) ตั้งค่าครั้งแรก
-1. เปิด http://localhost:3000/widget ในเบราเซอร์
-2. ใส่ **PromptPay ID** (เบอร์มือถือ 10 หลัก หรือเลขบัตรประชาชน 13 หลัก ที่ผูกกับบัญชีกสิกร)
-3. ปรับสี/ฟอนต์/เอฟเฟ็กต์ตามต้องการ — บันทึกอัตโนมัติ
-4. กด **▶ ทดสอบ Alert** เพื่อดูตัวอย่าง
-
-### 5) ใส่ Overlay ใน OBS
-1. ใน OBS → Sources → **+** → **Browser**
-2. ตั้งค่า:
-   - **URL**: `http://localhost:3000/overlay`
-   - **Width**: 1920 / **Height**: 1080
-   - ติ๊ก ✅ **Control audio via OBS** (เพื่อให้ OBS อัดเสียง TTS เข้า stream)
-3. กด OK เสร็จ
+State is stored in `data/settings.json` and `data/donations.json`.
+Uploaded assets land in `public/assets/`.
 
 ---
 
-## ลิงก์สำหรับแชร์ผู้ชม
+## Deploying to Vercel
 
-- ลิงก์โดเนท: `http://localhost:3000/`
-- ถ้าจะให้ผู้ชมโดเนทจากที่อื่นได้ ต้องใช้ tunnel เช่น `ngrok http 3000` แล้วใช้ URL ที่ ngrok สร้างให้
+This project is structured to run on Vercel by swapping three backends via env vars.
+
+### Required services (all have free tiers)
+
+| Service        | What it replaces            | Free tier             |
+|---              |---                          |---                    |
+| Vercel KV (Redis) | `data/*.json` files        | 30K req/mo · 256 MB   |
+| Vercel Blob    | `public/assets/` uploads     | 1 GB · 1M reads       |
+| Pusher Channels | Socket.IO realtime          | 100 conn · 200K msg/day |
+| EasySlip       | slip verification (existing) | 50 verify/day        |
+
+### Environment variables
+
+Set these in **Vercel → Project → Settings → Environment Variables**:
+
+```
+EASYSLIP_API_KEY=...
+
+# Vercel KV (auto-populated when you connect a KV store)
+KV_REST_API_URL=...
+KV_REST_API_TOKEN=...
+KV_REST_API_READ_ONLY_TOKEN=...
+KV_URL=...
+
+# Vercel Blob (auto-populated when you connect a Blob store)
+BLOB_READ_WRITE_TOKEN=...
+
+# Pusher (from pusher.com → App Keys)
+PUSHER_APP_ID=...
+PUSHER_KEY=...
+PUSHER_SECRET=...
+PUSHER_CLUSTER=ap1
+```
+
+### One-time setup
+
+1. **Push to GitHub** (already done).
+2. **Create the Vercel project** → import the GitHub repo. Framework preset = *Other*.
+3. **Connect a KV store**: Vercel Dashboard → Storage → Create → KV. Connect to project — env vars are added automatically.
+4. **Connect a Blob store**: Storage → Create → Blob. Same flow.
+5. **Sign up Pusher** at pusher.com → create a Channels app → copy the four credentials into Vercel env.
+6. **Add `EASYSLIP_API_KEY`** to Vercel env.
+7. Redeploy. Done.
+
+### How the code chooses a backend
+
+- `lib/storage.js` → uses Vercel KV when `KV_REST_API_URL` is present, otherwise local JSON files.
+- `lib/blob.js` → uses Vercel Blob when `BLOB_READ_WRITE_TOKEN` is present, otherwise writes to `public/assets/`.
+- `lib/realtime.js` → uses Pusher when `PUSHER_APP_ID` is present, otherwise Socket.IO (via local-server.js).
+- `public/assets/realtime-client.js` → fetches `/api/realtime-info` and loads either Pusher or Socket.IO client.
+
+This means **the same code runs locally and on Vercel** — no separate codebases.
 
 ---
 
-## โครงสร้างไฟล์
+## File structure
 
 ```
-server.js              เซิร์ฟเวอร์ Express + Socket.IO + PromptPay QR + TTS proxy
-package.json           dependencies
-data/
-  settings.json        การตั้งค่า (แก้ผ่าน /widget ได้)
-  donations.json       ประวัติ donation
+api/[...all].js          Vercel serverless wrapper
+local-server.js          Local dev entry (HTTP + Socket.IO)
+server.js                Express app factory (routes)
+lib/
+  storage.js             KV / JSON file abstraction
+  blob.js                Vercel Blob / local file abstraction
+  realtime.js            Pusher / Socket.IO abstraction
+  promptpay.js           PromptPay EMVCo payload + QR decoding
 public/
-  index.html           หน้า donor
-  widget.html          หน้าตั้งค่า
-  overlay.html         หน้า OBS (โปร่งใส)
+  index.html             Donor wizard (4-step flow)
+  widget.html            Streamer console
+  overlay.html           OBS browser source
   assets/
-    style.css          shared styles
-    coin.mp3           (วางไฟล์เสียง notification ของคุณที่นี่)
+    donor.css            Pink rose theme
+    admin.css            Dark charcoal theme
+    realtime-client.js   Loads Pusher or Socket.IO
+data/
+  settings.json          Default settings (seeded into KV on first run)
+vercel.json              Vercel routes
+.env / .env.example      Local env
 ```
 
-> **หมายเหตุเสียง notification**: ระบบไม่ได้แถม mp3 มา — ให้วางไฟล์ของคุณใน `public/assets/`
-> เช่น `public/assets/coin.mp3` แล้วใส่ path `/assets/coin.mp3` ใน widget settings
-> ถ้ายังไม่ตั้ง ระบบจะข้ามเสียงเอฟเฟ็กต์ (ยังอ่าน TTS ปกติ)
-
 ---
 
-## ตัวแปรในเทมเพลต
+## OBS setup
 
-ใช้ในช่อง "ข้อความหัวเรื่อง" และ "เทมเพลตเสียง":
-
-| ตัวแปร       | ความหมาย                 |
-|-------------|--------------------------|
-| `{name}`    | ชื่อผู้โดเนท              |
-| `{amount}`  | จำนวนเงิน                |
-| `{message}` | ข้อความ (เฉพาะใน TTS)    |
-
-ตัวอย่าง:
-- Title: `{name} โดเนท {amount} บาท ขอบคุณค่า!`
-- TTS: `คุณ {name} โดเนทมา {amount} บาท บอกว่า {message}`
-
----
-
-## การ deploy/แชร์ออกอินเตอร์เน็ต
-
-ถ้าอยากให้คนอื่นเข้ามาโดเนทจากนอกบ้านได้:
-
-**วิธีง่ายสุด (ngrok)**:
-```powershell
-# ติดตั้ง ngrok จาก https://ngrok.com แล้ว
-ngrok http 3000
-```
-จะได้ URL เช่น `https://abcd1234.ngrok.io` เอาไปแปะ stream ได้เลย
-
-**Overlay ใน OBS ยังคงใช้ localhost** (เร็วกว่า ไม่ต้องผ่านอินเตอร์เน็ต)
-
----
-
-## ข้อจำกัด
-
-- TTS ผ่าน Google Translate รองรับ ~200 ตัวอักษร/ครั้ง (ถ้าข้อความยาวกว่านี้ระบบตัดให้)
-- ไม่ได้เชื่อม API ธนาคาร — ใช้ระบบ "ซื่อสัตย์" (donor กดเองหลังโอน)
-- เก็บข้อมูลในไฟล์ JSON local — ไม่เหมาะกับโดเนทจำนวนมหาศาล
+1. OBS → Sources → **+** → Browser
+2. URL: `http://localhost:3000/overlay` (or your Vercel URL)
+3. Size: 1920 × 1080
+4. **Control audio via OBS** ✅ — required for TTS to enter the stream
+5. **Refresh browser when scene becomes active** ❌ — keep audio context unlocked

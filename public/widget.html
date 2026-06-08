@@ -322,11 +322,12 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="/socket.io/socket.io.js"></script>
+<script src="/assets/realtime-client.js"></script>
 <script>
 const $ = (s) => document.querySelector(s);
 let SETTINGS = {};
-const socket = io();
+let socket = { on: () => {} };  // no-op until connected
+RealtimeClient.connect().then(rt => { socket = rt; rt.on('donation', () => loadHistory()); });
 
 const get = (obj, path) => path.split('.').reduce((a, k) => a?.[k], obj);
 const set = (obj, path, val) => {
@@ -475,7 +476,7 @@ $('#clearHist').addEventListener('click', async () => {
   loadHistory();
 });
 
-socket.on('donation', () => loadHistory());
+// Realtime donation hook is bound up top when RealtimeClient connects
 
 // ---- Generic asset uploader ----
 function bindFileUpload({ inputId, endpoint, payloadKey, sizeLimitMB, onSuccess, statusId }) {

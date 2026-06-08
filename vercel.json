@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "buildCommand": null,
+  "framework": null,
+  "rewrites": [
+    { "source": "/widget", "destination": "/widget.html" },
+    { "source": "/overlay", "destination": "/overlay.html" },
+    { "source": "/api/(.*)", "destination": "/api/[...all]" }
+  ],
+  "functions": {
+    "api/[...all].js": {
+      "maxDuration": 30
+    }
+  }
+}
