@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Gift Jar (OBS)</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Sarabun:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  html, body {
+    margin: 0; padding: 0;
+    background: transparent;
+    overflow: hidden;
+    height: 100vh; width: 100vw;
+    font-family: 'Sarabun', sans-serif;
+    color: #fff;
+  }
+
+  .stage {
+    position: relative;
+    width: 100%; height: 100%;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 32px;
+  }
+
+  /* ===== Header (gift counters) ===== */
+  .header {
+    position: absolute;
+    top: 24px; left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+    pointer-events: none;
+  }
+  .header .label {
+    font-size: 11px;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.65);
+    font-weight: 600;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.6);
+  }
+  .header .count {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 64px;
+    line-height: 1;
+    margin-top: 4px;
+    color: #ffe5ec;
+    text-shadow: 0 4px 16px rgba(255, 100, 140, 0.6), 0 0 24px rgba(255, 150, 180, 0.4);
+    font-weight: 500;
+    transition: transform 0.3s cubic-bezier(.34,1.6,.6,1);
+  }
+  .header .count.bump { transform: scale(1.18); }
+  .header .sub {
+    font-size: 11px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: rgba(255,229,236,0.7);
+    font-weight: 500;
+    margin-top: 6px;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.6);
+  }
+
+  /* ===== Jar ===== */
+  .jar-container {
+    position: relative;
+    width: 380px;
+    height: 540px;
+  }
+
+  .jar-svg {
+    position: absolute;
+    inset: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 3;
+    filter: drop-shadow(0 30px 40px rgba(0,0,0,0.35));
+  }
+
+  /* Mask the gift area so falling items stay inside the jar shape */
+  .jar-content {
+    position: absolute;
+    /* tuned to match the SVG glass body */
+    left: 36px;
+    right: 36px;
+    top: 92px;
+    bottom: 50px;
+    overflow: hidden;
+    border-radius: 0 0 100px 100px / 0 0 50px 50px;
+    z-index: 2;
+  }
+
+  /* Each gift floating down */
+  .gift {
+    position: absolute;
+    width: 56px; height: 56px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%;
+    font-weight: 700;
+    color: #1a1416;
+    font-size: 22px;
+    box-shadow:
+      inset 0 -8px 16px rgba(0,0,0,0.18),
+      inset 0 4px 8px rgba(255,255,255,0.4),
+      0 4px 14px rgba(0,0,0,0.25);
+    will-change: transform, opacity;
+    user-select: none;
+  }
+  .gift img { width: 80%; height: 80%; object-fit: contain; border-radius: 50%; }
+  .gift.combo-2 { width: 64px; height: 64px; font-size: 24px; }
+  .gift.combo-5 { width: 72px; height: 72px; font-size: 26px; }
+  .gift.combo-10 { width: 84px; height: 84px; font-size: 30px; }
+  .gift.combo-50 { width: 100px; height: 100px; font-size: 36px; }
+
+  /* falling animation — quick drop + bounce */
+  @keyframes fall {
+    0%   { transform: translateY(-150px) rotate(var(--start-r, -30deg)); opacity: 0; }
+    15%  { opacity: 1; }
+    70%  { transform: translateY(var(--land-y)) rotate(var(--land-r, 0deg)); }
+    82%  { transform: translateY(calc(var(--land-y) - 14px)) rotate(var(--land-r, 0deg)); }
+    92%  { transform: translateY(var(--land-y)) rotate(var(--land-r, 0deg)); }
+    100% { transform: translateY(var(--land-y)) rotate(var(--land-r, 0deg)); }
+  }
+  .gift.falling { animation: fall var(--fall-dur, 1.4s) cubic-bezier(.45,.05,.7,1) forwards; }
+
+  /* combo flash */
+  @keyframes pop {
+    0% { transform: scale(0); opacity: 0; }
+    50% { transform: scale(1.15); opacity: 1; }
+    100% { transform: scale(0); opacity: 0; }
+  }
+  .combo-flash {
+    position: absolute;
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-weight: 600;
+    font-size: 64px;
+    color: #ffd166;
+    text-shadow: 0 0 16px rgba(255,209,102,0.7), 0 4px 12px rgba(0,0,0,0.5);
+    pointer-events: none;
+    animation: pop 1s ease forwards;
+    z-index: 5;
+  }
+
+  /* Top gifter banner */
+  .latest {
+    position: absolute;
+    bottom: 28px; left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: rgba(0,0,0,0.55);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 999px;
+    padding: 10px 22px;
+    display: flex; align-items: center; gap: 12px;
+    opacity: 0;
+    transition: opacity 0.4s, transform 0.4s cubic-bezier(.34,1.6,.6,1);
+    pointer-events: none;
+    z-index: 4;
+  }
+  .latest.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .latest .avatar {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ff8cab, #d4677c);
+    border: 2px solid #fff;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .latest .avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .latest .info { display: flex; flex-direction: column; line-height: 1.15; }
+  .latest .info .who { font-size: 14px; font-weight: 700; color: #fff; }
+  .latest .info .what {
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(255,229,236,0.85);
+    font-weight: 500;
+  }
+  .latest .info .what em { color: #ffd166; font-style: normal; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<div class="stage">
+
+  <div class="header">
+    <div class="label">Gifts received</div>
+    <div class="count" id="giftCount">0</div>
+    <div class="sub"><span id="diamondTotal">0</span> diamonds</div>
+  </div>
+
+  <div class="jar-container" id="jarContainer">
+
+    <!-- Mason-jar SVG: rim, neck, body, label band -->
+    <svg class="jar-svg" viewBox="0 0 380 540" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="glass" x1="0" x2="1" y1="0" y2="1">
+          <stop offset="0%" stop-color="rgba(255,255,255,0.25)"/>
+          <stop offset="50%" stop-color="rgba(255,255,255,0.05)"/>
+          <stop offset="100%" stop-color="rgba(255,255,255,0.18)"/>
+        </linearGradient>
+        <linearGradient id="rim" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stop-color="rgba(255,255,255,0.6)"/>
+          <stop offset="100%" stop-color="rgba(255,255,255,0.25)"/>
+        </linearGradient>
+        <linearGradient id="ribbon" x1="0" x2="1" y1="0" y2="0">
+          <stop offset="0%" stop-color="#b54d61"/>
+          <stop offset="50%" stop-color="#e093a1"/>
+          <stop offset="100%" stop-color="#b54d61"/>
+        </linearGradient>
+        <linearGradient id="shine" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stop-color="rgba(255,255,255,0.5)"/>
+          <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+        </linearGradient>
+      </defs>
+
+      <!-- Body (curved sides) -->
+      <path d="M 50 92
+               L 50 460
+               Q 50 510 100 510
+               L 280 510
+               Q 330 510 330 460
+               L 330 92
+               Z"
+            fill="url(#glass)"
+            stroke="rgba(255,255,255,0.6)"
+            stroke-width="2"/>
+
+      <!-- Lid rim band -->
+      <rect x="40" y="60" width="300" height="36" rx="6"
+            fill="url(#rim)"
+            stroke="rgba(255,255,255,0.55)"
+            stroke-width="1.5"/>
+      <line x1="40" y1="92" x2="340" y2="92" stroke="rgba(255,255,255,0.6)" stroke-width="2"/>
+
+      <!-- Lid top -->
+      <rect x="55" y="38" width="270" height="26" rx="4"
+            fill="rgba(255,255,255,0.35)"
+            stroke="rgba(255,255,255,0.5)" stroke-width="1.5"/>
+
+      <!-- Decorative ribbon around neck -->
+      <rect x="55" y="100" width="270" height="22" fill="url(#ribbon)" opacity="0.85"/>
+      <text x="190" y="116" text-anchor="middle"
+            font-family="Cormorant Garamond, serif"
+            font-style="italic" font-weight="600"
+            font-size="14" fill="white" letter-spacing="2">k.praewa</text>
+
+      <!-- Subtle vertical shine highlights on glass -->
+      <path d="M 70 130 L 70 470" stroke="url(#shine)" stroke-width="6" opacity="0.5"/>
+      <path d="M 305 140 L 305 460" stroke="url(#shine)" stroke-width="3" opacity="0.35"/>
+    </svg>
+
+    <!-- Gifts pile up inside this -->
+    <div class="jar-content" id="jarContent"></div>
+
+    <!-- Latest gifter banner -->
+    <div class="latest" id="latest">
+      <div class="avatar"><img id="latestAvatar" alt=""/></div>
+      <div class="info">
+        <div class="who" id="latestWho"></div>
+        <div class="what" id="latestWhat"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="/assets/realtime-client.js"></script>
+<script>
+  const jarContent = document.getElementById('jarContent');
+  const jarContainer = document.getElementById('jarContainer');
+  const countEl = document.getElementById('giftCount');
+  const diamondEl = document.getElementById('diamondTotal');
+  const latestBox = document.getElementById('latest');
+  const latestWho = document.getElementById('latestWho');
+  const latestWhat = document.getElementById('latestWhat');
+  const latestAvatar = document.getElementById('latestAvatar');
+
+  let giftTotal = 0;
+  let diamondTotal = 0;
+  let latestHideTimer;
+
+  // Pretty colors / glyph for common TikTok gift types — fallback for unknown gifts
+  const GIFT_STYLES = {
+    rose:       { bg: 'linear-gradient(135deg,#ffb8c5,#e093a1)', glyph: '✿' },
+    heart:      { bg: 'linear-gradient(135deg,#ff8ca0,#d4677c)', glyph: '♥' },
+    star:       { bg: 'linear-gradient(135deg,#ffe28a,#ffd166)', glyph: '★' },
+    diamond:    { bg: 'linear-gradient(135deg,#a3d4ff,#5eb0ff)', glyph: '♦' },
+    coin:       { bg: 'linear-gradient(135deg,#ffe28a,#d4af6a)', glyph: '$' },
+    crown:      { bg: 'linear-gradient(135deg,#ffd56b,#b48a3e)', glyph: '♕' },
+    cake:       { bg: 'linear-gradient(135deg,#ffcfd9,#f095a8)', glyph: '◉' },
+    coffee:     { bg: 'linear-gradient(135deg,#d6a572,#8c5a30)', glyph: '◈' },
+    panda:      { bg: 'linear-gradient(135deg,#ffffff,#cccccc)', glyph: '◐' },
+    perfume:    { bg: 'linear-gradient(135deg,#e6c5e1,#a875b4)', glyph: '◆' },
+    galaxy:     { bg: 'linear-gradient(135deg,#7f5af0,#3a1f6b)', glyph: '✦' },
+    lion:       { bg: 'linear-gradient(135deg,#f5b664,#c87b2c)', glyph: '◉' },
+    universe:   { bg: 'linear-gradient(135deg,#5a4a8a,#1a1340)', glyph: '✧' },
+    rainbow:    { bg: 'linear-gradient(135deg,#ff9aa2,#ffb482,#ffe28a,#9ee6a0,#9ad7e0,#bda2eb)', glyph: '◐' }
+  };
+  function styleFor(type) {
+    const key = (type || '').toLowerCase();
+    for (const k of Object.keys(GIFT_STYLES)) if (key.includes(k)) return GIFT_STYLES[k];
+    return { bg: 'linear-gradient(135deg,#ffc7d5,#e093a1)', glyph: '◆' };
+  }
+
+  function pickComboClass(repeat) {
+    if (repeat >= 50) return 'combo-50';
+    if (repeat >= 10) return 'combo-10';
+    if (repeat >= 5)  return 'combo-5';
+    if (repeat >= 2)  return 'combo-2';
+    return '';
+  }
+
+  function placeGift(gift) {
+    const w = jarContent.clientWidth;
+    const h = jarContent.clientHeight;
+    const repeat = Math.max(1, gift.repeatCount || 1);
+
+    // Spawn (up to) N gifts staggered slightly for combos
+    const drops = Math.min(repeat, 12);
+    for (let i = 0; i < drops; i++) {
+      setTimeout(() => spawnGift(gift, w, h), i * 90);
+    }
+
+    // Combo flash for big sends
+    if (repeat >= 5) {
+      const flash = document.createElement('div');
+      flash.className = 'combo-flash';
+      flash.textContent = '×' + repeat;
+      flash.style.top = '40%';
+      flash.style.left = '50%';
+      flash.style.transform = 'translate(-50%,-50%)';
+      jarContainer.appendChild(flash);
+      setTimeout(() => flash.remove(), 1100);
+    }
+  }
+
+  function spawnGift(gift, w, h) {
+    const s = styleFor(gift.giftType || gift.giftName);
+    const el = document.createElement('div');
+    el.className = 'gift falling ' + pickComboClass(gift.repeatCount);
+    el.style.background = s.bg;
+    if (gift.giftPictureUrl) {
+      const img = document.createElement('img');
+      img.src = gift.giftPictureUrl;
+      img.onerror = () => { img.remove(); el.textContent = s.glyph; };
+      el.appendChild(img);
+    } else {
+      el.textContent = s.glyph;
+    }
+
+    // Random landing position
+    const size = 56;
+    const padX = 8;
+    const left = padX + Math.random() * (w - size - padX * 2);
+    // Random vertical near bottom — earlier gifts pile lower-ish
+    const baseLand = h - size - 8;
+    const wobble = Math.random() * Math.min(180, h - 200);
+    const landY = baseLand - wobble * 0.4;
+
+    el.style.left = left + 'px';
+    el.style.top = '0px';
+    el.style.setProperty('--land-y', landY + 'px');
+    el.style.setProperty('--start-r', (-30 + Math.random() * 60) + 'deg');
+    el.style.setProperty('--land-r', (-20 + Math.random() * 40) + 'deg');
+    el.style.setProperty('--fall-dur', (1.1 + Math.random() * 0.6) + 's');
+
+    jarContent.appendChild(el);
+
+    // After settle, remove the falling animation class so it stays
+    el.addEventListener('animationend', () => {
+      el.classList.remove('falling');
+      el.style.transform = `translateY(${landY}px) rotate(${el.style.getPropertyValue('--land-r')})`;
+    }, { once: true });
+
+    // Cap total elements so DOM doesn't explode
+    const MAX = 80;
+    while (jarContent.childElementCount > MAX) jarContent.firstElementChild.remove();
+  }
+
+  function bumpCounter() {
+    countEl.classList.add('bump');
+    setTimeout(() => countEl.classList.remove('bump'), 320);
+  }
+
+  function showLatest(gift) {
+    latestWho.textContent = gift.nickname || gift.uniqueId || 'Someone';
+    const giftDisplay = gift.giftName + (gift.repeatCount > 1 ? ` ×${gift.repeatCount}` : '');
+    latestWhat.innerHTML = 'sent <em>' + escapeHtml(giftDisplay) + '</em>';
+    if (gift.profilePictureUrl) {
+      latestAvatar.src = gift.profilePictureUrl;
+      latestAvatar.style.display = '';
+    } else {
+      latestAvatar.removeAttribute('src');
+    }
+    latestBox.classList.add('show');
+    clearTimeout(latestHideTimer);
+    latestHideTimer = setTimeout(() => latestBox.classList.remove('show'), 4500);
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  function onGift(gift) {
+    giftTotal += (gift.repeatCount || 1);
+    diamondTotal += (gift.diamondCount || 0) * (gift.repeatCount || 1);
+    countEl.textContent = giftTotal.toLocaleString();
+    diamondEl.textContent = diamondTotal.toLocaleString();
+    bumpCounter();
+    placeGift(gift);
+    showLatest(gift);
+  }
+
+  function onClear() {
+    jarContent.innerHTML = '';
+    giftTotal = 0; diamondTotal = 0;
+    countEl.textContent = '0';
+    diamondEl.textContent = '0';
+    latestBox.classList.remove('show');
+  }
+
+  RealtimeClient.connect().then(rt => {
+    rt.on('jar:gift', onGift);
+    rt.on('jar:clear', onClear);
+  });
+</script>
+</body>
+</html>

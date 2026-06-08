@@ -16,6 +16,7 @@
   <div class="crumb">Widget Console</div>
   <div class="actions">
     <a href="/overlay" target="_blank">Overlay</a>
+    <a href="/jar" target="_blank">Jar</a>
     <a href="#" id="logoutLink">Sign out</a>
   </div>
 </header>
@@ -310,8 +311,36 @@
 
     <section class="card">
       <div class="card-head">
-        <div class="title">Recent donations</div>
+        <div class="title">TikTok gift jar</div>
         <div class="num">06</div>
+      </div>
+      <p class="hint" style="margin-top: -8px; margin-bottom: 14px;">
+        Open the jar overlay at <code>/jar</code> as an OBS Browser Source. Run
+        <code>node tiktok-bridge.js @yourhandle</code> on this PC to forward live gifts.
+      </p>
+
+      <div class="grid-2">
+        <div class="field">
+          <label class="field-label">TikTok handle</label>
+          <input type="text" id="tiktokHandleInput" placeholder="@k.praewa" />
+        </div>
+        <div class="field" style="display: flex; flex-direction: column; justify-content: flex-end;">
+          <button class="btn block" id="copyBridgeCmd" type="button">Copy bridge command</button>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+        <button class="btn ghost" id="testGiftRose" type="button">Send rose</button>
+        <button class="btn ghost" id="testGiftStar" type="button">Send star ×5</button>
+        <button class="btn ghost" id="testGiftDiamond" type="button">Send diamond ×10</button>
+        <button class="btn ghost danger" id="clearJarBtn" type="button">Clear jar</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <div class="title">Recent donations</div>
+        <div class="num">07</div>
       </div>
       <div class="history" id="histList"></div>
       <button class="btn ghost danger sm" id="clearHist" style="margin-top: 16px;">Clear history</button>
@@ -491,6 +520,44 @@ $('#clearHist').addEventListener('click', async () => {
   if (!confirm('Clear all donation history?')) return;
   await fetch('/api/donations', { method: 'DELETE' });
   loadHistory();
+});
+
+// ---- Jar test controls ----
+async function sendTestGift(g) {
+  try {
+    const r = await fetch('/api/jar/gift', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...g, test: true })
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    toast('Gift sent');
+  } catch (e) { toast('Failed: ' + e.message, true); }
+}
+
+$('#testGiftRose').addEventListener('click', () => sendTestGift({
+  giftName: 'Rose', giftType: 'rose', repeatCount: 1, diamondCount: 1,
+  uniqueId: 'tester', nickname: 'Tester'
+}));
+$('#testGiftStar').addEventListener('click', () => sendTestGift({
+  giftName: 'Star', giftType: 'star', repeatCount: 5, diamondCount: 1,
+  uniqueId: 'tester', nickname: 'Tester'
+}));
+$('#testGiftDiamond').addEventListener('click', () => sendTestGift({
+  giftName: 'Diamond', giftType: 'diamond', repeatCount: 10, diamondCount: 5,
+  uniqueId: 'tester', nickname: 'Tester'
+}));
+$('#clearJarBtn').addEventListener('click', async () => {
+  if (!confirm('Clear the jar?')) return;
+  await fetch('/api/jar/clear', { method: 'POST' });
+  toast('Jar cleared');
+});
+
+$('#copyBridgeCmd').addEventListener('click', () => {
+  const handle = ($('#tiktokHandleInput').value || '@k.praewa').trim().replace(/^@?/, '@');
+  const origin = location.origin;
+  const cmd = `node tiktok-bridge.js ${handle} --api ${origin} --user Admin --pass YOUR_PASSWORD`;
+  navigator.clipboard.writeText(cmd).then(() => toast('Command copied'));
 });
 
 // Realtime donation hook is bound up top when RealtimeClient connects

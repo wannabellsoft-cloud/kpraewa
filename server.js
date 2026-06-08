@@ -55,6 +55,7 @@ function createApp() {
   app.use(express.static(path.join(__dirname, 'public'), { extensions: ['html'] }));
   app.get('/widget', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'widget.html')));
   app.get('/overlay', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'overlay.html')));
+  app.get('/jar', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'jar.html')));
 
   // ---- Settings ----
   app.get('/api/settings', async (_req, res) => {
@@ -285,6 +286,34 @@ function createApp() {
       res.setHeader('Cache-Control', 'no-store');
       Readable.fromWeb(r.body).pipe(res);
     } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
+  // ---- Jar: receive TikTok Live gift events ----
+  // Posted from tiktok-bridge.js running on the streamer's PC.
+  // Auth required so randoms can't spam the jar.
+  app.post('/api/jar/gift', auth.requireAuth, async (req, res) => {
+    const b = req.body || {};
+    const gift = {
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+      giftName: String(b.giftName || 'Gift').slice(0, 40),
+      giftType: String(b.giftType || b.giftName || 'gift').toLowerCase().slice(0, 20),
+      repeatCount: Math.max(1, Math.min(999, Number(b.repeatCount) || 1)),
+      diamondCount: Math.max(0, Math.min(99999, Number(b.diamondCount) || 0)),
+      uniqueId: String(b.uniqueId || 'anon').slice(0, 40),
+      nickname: String(b.nickname || b.uniqueId || 'Someone').slice(0, 40),
+      giftPictureUrl: typeof b.giftPictureUrl === 'string' ? b.giftPictureUrl.slice(0, 500) : null,
+      profilePictureUrl: typeof b.profilePictureUrl === 'string' ? b.profilePictureUrl.slice(0, 500) : null,
+      receivedAt: new Date().toISOString(),
+      test: !!b.test
+    };
+    await realtime.emit('jar:gift', gift);
+    res.json({ ok: true, gift });
+  });
+
+  // ---- Jar: clear (reset all gifts on overlay) ----
+  app.post('/api/jar/clear', auth.requireAuth, async (_req, res) => {
+    await realtime.emit('jar:clear', { at: Date.now() });
+    res.json({ ok: true });
   });
 
   // ---- File uploads ----

@@ -5,7 +5,8 @@
   "rewrites": [
     { "source": "/widget", "destination": "/widget.html" },
     { "source": "/widget/login", "destination": "/widget-login.html" },
-    { "source": "/overlay", "destination": "/overlay.html" }
+    { "source": "/overlay", "destination": "/overlay.html" },
+    { "source": "/jar", "destination": "/jar.html" }
   ],
   "functions": {
     "api/[...all].js": {
