@@ -481,6 +481,9 @@
   let giftTotal = 0;
   let diamondTotal = 0;
   let latestHideTimer;
+  // Physics state: every placed gift's bounding box so newcomers can stack on them.
+  // { left, top, size, element }
+  let placedGifts = [];
 
   // Runtime settings — overridden by /api/settings + realtime updates
   let SETTINGS = {
@@ -568,6 +571,57 @@
     }
   }
 
+  // ===== Stacking physics =====
+  // Find the lowest Y (highest number) at which a gift of given size centered
+  // at centerX would rest without overlapping anything already placed.
+  function findStackY(centerX, size) {
+    const h = jarContent.clientHeight;
+    let y = h - size - 4;          // start on the floor
+    for (const p of placedGifts) {
+      const pCenterX = p.left + p.size / 2;
+      const horzDist = Math.abs(centerX - pCenterX);
+      const minHorz = (size + p.size) / 2 * 0.85;   // allow a small overlap for natural look
+      if (horzDist < minHorz) {
+        const candidate = p.top - size + Math.min(size, p.size) * 0.18;
+        if (candidate < y) y = candidate;
+      }
+    }
+    return y;
+  }
+
+  function pickPlacement(size) {
+    const w = jarContent.clientWidth;
+    const h = jarContent.clientHeight;
+    const isLab = stage.classList.contains('theme-lab');
+    let best = null;
+    for (let i = 0; i < 30; i++) {
+      let centerX;
+      if (isLab) {
+        centerX = w * 0.5 + (Math.random() - 0.5) * w * 0.88;
+      } else {
+        const padX = 4;
+        centerX = padX + size / 2 + Math.random() * Math.max(0, (w - size - padX * 2));
+      }
+      const left = centerX - size / 2;
+      if (left < 2 || left + size > w - 2) continue;
+      const top = findStackY(centerX, size);
+
+      if (isLab) {
+        // Enforce flask cone shape at the chosen Y
+        const cy = top + size / 2;
+        const yRatio = Math.max(0, Math.min(1, cy / h));
+        const halfwidth = 0.13 + (0.50 - 0.13) * yRatio;
+        const minCx = (0.5 - halfwidth) * w;
+        const maxCx = (0.5 + halfwidth) * w;
+        if (centerX < minCx || centerX > maxCx) continue;
+      }
+      if (!best || top > best.top) best = { left, top, size };
+      // Prefer pretty fast — first valid is fine for randomness
+      if (best) return best;
+    }
+    return best || { left: w / 2 - size / 2, top: 0, size };
+  }
+
   function spawnGift(gift, w, h, silent = false) {
     const s = styleFor(gift.giftType || gift.giftName);
     const el = document.createElement('div');
@@ -606,44 +660,32 @@
       el.style.height = (baseH * extraScale) + 'px';
     }
 
+    // Pick a physically reasonable resting spot
     const size = el.offsetWidth || 56;
-    const padX = 8;
-    const baseLand = h - size - 8;
-    const wobble = Math.random() * Math.min(180, h - 200);
-    const landY = baseLand - wobble * 0.4;
+    const placement = pickPlacement(size);
+    const left = placement.left;
+    const landY = placement.top;
     const startR = (-30 + Math.random() * 60);
-    const landR  = (-20 + Math.random() * 40);
-
-    const isLab = stage.classList.contains('theme-lab');
-    let minX, maxX;
-    if (isLab) {
-      const yRatio = Math.max(0, Math.min(1, landY / h));
-      const halfwidth = 0.13 + (0.50 - 0.13) * yRatio;
-      minX = (0.5 - halfwidth) * w + padX;
-      maxX = (0.5 + halfwidth) * w - size - padX;
-    } else {
-      minX = padX;
-      maxX = w - size - padX;
-    }
-    const left = minX + Math.random() * Math.max(0, maxX - minX);
+    const landR  = (-20 + Math.random() * 40) * 0.5;   // softer rotation so stacks read cleanly
 
     el.style.left = left + 'px';
     el.style.top = '0px';
     el.style.setProperty('--land-y', landY + 'px');
     el.style.setProperty('--start-r', startR + 'deg');
     el.style.setProperty('--land-r', landR + 'deg');
-    el.style.setProperty('--fall-dur', (1.1 + Math.random() * 0.6) + 's');
+    el.style.setProperty('--fall-dur', (1.0 + Math.random() * 0.5) + 's');
 
     if (silent) {
-      // Replay path — appear directly in the rested position, no fall animation
       el.style.transform = `translateY(${landY}px) rotate(${landR}deg)`;
     }
 
     jarContent.appendChild(el);
 
+    // Record the placement so future gifts stack on top of it
+    const placementRec = { left, top: landY, size, element: el };
+    placedGifts.push(placementRec);
+
     if (!silent) {
-      // Persist the final transform inline BEFORE removing .falling, otherwise
-      // the keyframe-driven transform reverts and the gift snaps back to top.
       el.addEventListener('animationend', () => {
         el.style.transform = `translateY(${landY}px) rotate(${landR}deg)`;
         el.classList.remove('falling');
@@ -651,6 +693,10 @@
     }
 
     const MAX = 80;
+    while (placedGifts.length > MAX) {
+      const oldest = placedGifts.shift();
+      try { oldest.element?.remove(); } catch {}
+    }
     while (jarContent.childElementCount > MAX) jarContent.firstElementChild.remove();
   }
 
@@ -718,6 +764,7 @@
   }
   function onClear() {
     jarContent.innerHTML = '';
+    placedGifts = [];
     giftTotal = 0; diamondTotal = 0;
     countEl.textContent = '0';
     diamondEl.textContent = '0';
