@@ -94,13 +94,25 @@
     border-radius: 0 0 100px 100px / 0 0 50px 50px;
     z-index: 2;
   }
-  /* Lab-theme gift area (Erlenmeyer flask body — wider bottom) */
+  /* Lab-theme gift area — clip-path traces the Erlenmeyer cone so gifts
+     are only visible inside the actual flask glass. Edges of the
+     bounding box that fall outside the cone are masked away. */
   .stage.theme-lab .jar-content {
-    left: 56px;
-    right: 56px;
-    top: 230px;
-    bottom: 40px;
+    left: 50px;
+    right: 50px;
+    top: 220px;
+    bottom: 30px;
     border-radius: 0 0 70px 70px / 0 0 40px 40px;
+    /* Top of content (y=0) corresponds to the flask neck base (x ≈ 37-63%).
+       Bottom (y=100%) opens to the full body width. */
+    clip-path: polygon(
+      36.5% 0%,
+      63.5% 0%,
+      100% 96%,
+      88% 100%,
+      12% 100%,
+      0% 96%
+    );
   }
 
   /* ===== Theme show/hide ===== */
@@ -580,10 +592,25 @@
 
     const size = el.offsetWidth || 56;
     const padX = 8;
-    const left = padX + Math.random() * Math.max(0, (w - size - padX * 2));
     const baseLand = h - size - 8;
     const wobble = Math.random() * Math.min(180, h - 200);
     const landY = baseLand - wobble * 0.4;
+
+    // For the lab flask, narrow at the top and widening towards the bottom.
+    // Constrain spawn X so gifts always land inside the visible cone.
+    const isLab = stage.classList.contains('theme-lab');
+    let minX, maxX;
+    if (isLab) {
+      const yRatio = Math.max(0, Math.min(1, landY / h));
+      // Cone half-width: 13% at the very top, 50% at the bottom
+      const halfwidth = 0.13 + (0.50 - 0.13) * yRatio;
+      minX = (0.5 - halfwidth) * w + padX;
+      maxX = (0.5 + halfwidth) * w - size - padX;
+    } else {
+      minX = padX;
+      maxX = w - size - padX;
+    }
+    const left = minX + Math.random() * Math.max(0, maxX - minX);
 
     el.style.left = left + 'px';
     el.style.top = '0px';
