@@ -19,6 +19,6 @@
     "pusher": "^5.2.0",
     "qrcode": "^1.5.4",
     "socket.io": "^4.7.5",
-    "tiktok-live-connector": "^2.1.1-beta1"
+    "tiktok-live-connector": "^2.3.0-beta1"
   }
 }

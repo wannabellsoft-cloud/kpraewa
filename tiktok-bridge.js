@@ -181,8 +181,17 @@ function extractGift(data) {
     || data.giftPictureUrl
     || null;
 
+  // extendedGiftInfo (when enableExtendedGiftInfo: true) usually lands here
+  const extInfo = data.extendedGiftInfo
+               || data.giftInfo
+               || data.giftDetails?.extendedGiftInfo
+               || null;
+
   const giftPictureUrl =
        directGiftUrl
+    || pickUrl(extInfo?.image)
+    || pickUrl(extInfo?.icon)
+    || pickUrl(extInfo?.thumbnail)
     || pickUrl(data.giftDetails?.image)
     || pickUrl(data.giftDetails?.giftImage)
     || pickUrl(data.giftDetails?.icon)
@@ -190,6 +199,7 @@ function extractGift(data) {
     || pickUrl(data.gift?.giftImage)
     || pickUrl(data.gift?.icon)
     || pickUrl(data.giftImage)
+    || deepFindTikTokUrl(extInfo)
     || deepFindTikTokUrl(data.giftDetails)
     || deepFindTikTokUrl(data.gift)
     || null;
@@ -226,10 +236,25 @@ async function start() {
     return;
   }
 
-  conn = new TikTokLiveConnection(handle);
+  // enableExtendedGiftInfo pulls the TikTok gift catalog at connection time,
+  // which means every gift event arrives already enriched with image URLs.
+  // signApiKey is optional — only set if EULER_API_KEY env is provided
+  // (eulerstream.com paid tier; helps avoid signing rate-limits).
+  const connOpts = {
+    enableExtendedGiftInfo: true,
+    fetchRoomInfoOnConnect: true,
+    processInitialData: true
+  };
+  if (process.env.EULER_API_KEY) {
+    connOpts.signApiKey = process.env.EULER_API_KEY;
+    log('Using custom Euler sign API key.');
+  }
+  conn = new TikTokLiveConnection(handle, connOpts);
 
   conn.on(ControlEvent.CONNECTED, state => {
     ok(`Connected to TikTok Live ${handle}  room=${state?.roomId || '?'}`);
+    const giftCount = state?.availableGifts?.length || conn?.availableGifts?.length || 0;
+    if (giftCount) ok(`Loaded ${giftCount} gifts in the TikTok catalog.`);
     log('Waiting for gifts…');
   });
   conn.on(ControlEvent.DISCONNECTED, () => warn('Disconnected from TikTok'));
