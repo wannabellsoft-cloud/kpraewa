@@ -83,15 +83,24 @@
     filter: drop-shadow(0 30px 40px rgba(0,0,0,0.35));
   }
 
-  /* Glass-theme gift area (mason jar body) */
+  /* Glass-theme gift area — round chubby jar.
+     Starts BELOW the bow (~y=295) and clips to the rounded body shape
+     so gifts always sit inside the visible glass. */
   .jar-content {
     position: absolute;
-    left: 60px;
-    right: 60px;
-    top: 140px;
-    bottom: 32px;
+    left: 56px;
+    right: 56px;
+    top: 295px;
+    bottom: 38px;
     overflow: hidden;
-    border-radius: 0 0 60px 60px / 0 0 36px 36px;
+    /* Polygon traces the bottom half of the round body */
+    clip-path: polygon(
+      8% 0%, 92% 0%,
+      100% 28%, 100% 62%,
+      94% 85%, 82% 96%, 65% 100%,
+      35% 100%, 18% 96%, 6% 85%,
+      0% 62%, 0% 28%
+    );
     z-index: 2;
   }
   /* Lab-theme gift area — clip-path traces the Erlenmeyer cone so gifts
@@ -276,120 +285,177 @@
 
   <div class="jar-container" id="jarContainer">
 
-    <!-- ========== Cute pastel mason jar ========== -->
+    <!-- ========== Illustrated round jar with pink bow ========== -->
     <svg class="jar-svg theme-svg theme-glass" viewBox="0 0 380 540" xmlns="http://www.w3.org/2000/svg">
       <defs>
-        <!-- Soft pink-tinted glass body -->
-        <linearGradient id="g_body" x1="0" x2="1" y1="0" y2="0">
-          <stop offset="0%"   stop-color="rgba(255,210,225,0.34)"/>
-          <stop offset="16%"  stop-color="rgba(255,225,235,0.10)"/>
-          <stop offset="50%"  stop-color="rgba(255,230,238,0.04)"/>
-          <stop offset="84%"  stop-color="rgba(255,225,235,0.10)"/>
-          <stop offset="100%" stop-color="rgba(255,210,225,0.30)"/>
-        </linearGradient>
-        <!-- Marshmallow dome lid -->
-        <linearGradient id="g_lid" x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0%"   stop-color="#fff0f4"/>
-          <stop offset="45%"  stop-color="#fac0ce"/>
-          <stop offset="100%" stop-color="#e093a1"/>
-        </linearGradient>
-        <radialGradient id="g_lidShine" cx="32%" cy="28%" r="55%">
-          <stop offset="0%"   stop-color="rgba(255,255,255,0.9)"/>
-          <stop offset="60%"  stop-color="rgba(255,255,255,0.15)"/>
-          <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+        <!-- Soft pink-tinted glass interior -->
+        <radialGradient id="g_glassInner" cx="50%" cy="58%" r="55%">
+          <stop offset="0%"  stop-color="rgba(255,225,235,0.04)"/>
+          <stop offset="70%" stop-color="rgba(255,200,215,0.12)"/>
+          <stop offset="100%" stop-color="rgba(245,166,187,0.22)"/>
         </radialGradient>
-        <!-- Ribbon band -->
-        <linearGradient id="g_band" x1="0" x2="1" y1="0" y2="0">
-          <stop offset="0%"   stop-color="#e093a1"/>
-          <stop offset="50%"  stop-color="#fac0ce"/>
-          <stop offset="100%" stop-color="#e093a1"/>
+        <!-- Bow main fill -->
+        <linearGradient id="g_bow" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%"  stop-color="#ffd2dd"/>
+          <stop offset="100%" stop-color="#f29ab1"/>
         </linearGradient>
-        <!-- Bow gradient -->
-        <linearGradient id="g_bow" x1="0" x2="1" y1="0" y2="1">
-          <stop offset="0%"   stop-color="#ff8caa"/>
+        <!-- Knot fill (darker pink) -->
+        <linearGradient id="g_knot" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%"  stop-color="#f29ab1"/>
+          <stop offset="100%" stop-color="#c8657d"/>
+        </linearGradient>
+        <!-- Heart fill -->
+        <linearGradient id="g_heart" x1="0" x2="1" y1="0" y2="1">
+          <stop offset="0%"  stop-color="#ffabc2"/>
           <stop offset="100%" stop-color="#d4677c"/>
-        </linearGradient>
-        <!-- Highlight stripe -->
-        <linearGradient id="g_shine" x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0%"   stop-color="rgba(255,255,255,0)"/>
-          <stop offset="20%"  stop-color="rgba(255,255,255,0.55)"/>
-          <stop offset="80%"  stop-color="rgba(255,255,255,0.55)"/>
-          <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
         </linearGradient>
       </defs>
 
-      <!-- ⭐ Tiny bow on top of the lid -->
-      <g transform="translate(190 32)">
-        <!-- Left wing -->
-        <path d="M -2 4 Q -20 -4 -22 6 Q -20 16 -2 10 Z"
-              fill="url(#g_bow)" stroke="rgba(140,55,72,0.45)" stroke-width="0.8"/>
-        <!-- Right wing -->
-        <path d="M 2 4 Q 20 -4 22 6 Q 20 16 2 10 Z"
-              fill="url(#g_bow)" stroke="rgba(140,55,72,0.45)" stroke-width="0.8"/>
-        <!-- Bow tails -->
-        <path d="M -4 10 Q -8 18 -12 22 L -5 22 Z" fill="#d4677c" opacity="0.85"/>
-        <path d="M 4 10 Q 8 18 12 22 L 5 22 Z" fill="#d4677c" opacity="0.85"/>
-        <!-- Center knot -->
-        <ellipse cx="0" cy="7" rx="4" ry="5" fill="#b54860"/>
-        <!-- Knot shine -->
-        <ellipse cx="-1" cy="5" rx="1.5" ry="2" fill="rgba(255,255,255,0.5)"/>
+      <!-- ====== Round chubby glass body ====== -->
+      <path d="M 112 138
+               C  72 156  50 210  50 290
+               C  50 380  74 458 114 488
+               Q 134 506 162 506
+               L 218 506
+               Q 246 506 266 488
+               C 306 458 330 380 330 290
+               C 330 210 308 156 268 138
+               Z"
+            fill="url(#g_glassInner)"
+            stroke="#e89bb0" stroke-width="2.4" stroke-linejoin="round"/>
+
+      <!-- Bottom inner pink reflection -->
+      <ellipse cx="190" cy="478" rx="98" ry="8" fill="rgba(245,166,187,0.35)"/>
+      <ellipse cx="190" cy="485" rx="74" ry="4" fill="rgba(245,166,187,0.25)"/>
+
+      <!-- Glass highlight (left curve) -->
+      <path d="M 82 220 Q 70 320 92 420" fill="none"
+            stroke="rgba(255,255,255,0.85)" stroke-width="4" stroke-linecap="round" opacity="0.7"/>
+      <path d="M 95 250 Q 90 330 100 390" fill="none"
+            stroke="rgba(255,255,255,0.45)" stroke-width="1.4"/>
+      <!-- Glass highlight (right curve) -->
+      <path d="M 300 230 Q 308 320 290 410" fill="none"
+            stroke="rgba(255,255,255,0.5)" stroke-width="2.2" opacity="0.7"/>
+
+      <!-- ====== Rim (top opening) ====== -->
+      <!-- Outer rim ellipse -->
+      <ellipse cx="190" cy="138" rx="80" ry="9"
+               fill="rgba(255,210,225,0.4)"
+               stroke="#e89bb0" stroke-width="2.4"/>
+      <!-- Inner rim (glass thickness) -->
+      <ellipse cx="190" cy="138" rx="68" ry="6"
+               fill="rgba(255,220,230,0.3)"
+               stroke="#c47585" stroke-width="1.2" opacity="0.6"/>
+      <!-- Tiny thread hint -->
+      <ellipse cx="190" cy="148" rx="80" ry="3" fill="none" stroke="#e89bb0" stroke-width="1" opacity="0.5"/>
+
+      <!-- ====== Ribbon collar (ruffled scarf around neck) ====== -->
+      <path d="M 105 168
+               Q 115 156 130 160
+               Q 144 152 160 158
+               Q 175 150 190 155
+               Q 205 150 220 158
+               Q 236 152 250 160
+               Q 265 156 275 168
+               Q 282 188 278 210
+               Q 270 216 256 218
+               Q 240 224 220 220
+               Q 200 226 180 220
+               Q 160 224 144 218
+               Q 130 216 120 212
+               Q 108 200 105 168 Z"
+            fill="url(#g_bow)"
+            stroke="#c8657d" stroke-width="2" stroke-linejoin="round"/>
+      <!-- Collar inner ruffle line -->
+      <path d="M 115 190 Q 145 198 190 200 Q 235 198 265 190"
+            fill="none" stroke="#fff" stroke-width="1.2" stroke-dasharray="3 3" opacity="0.55"/>
+      <!-- Collar vertical pleat lines -->
+      <g stroke="#c8657d" stroke-width="1" opacity="0.55">
+        <path d="M 130 170 Q 132 188 134 208" fill="none"/>
+        <path d="M 160 165 Q 162 188 164 210" fill="none"/>
+        <path d="M 220 165 Q 222 188 224 210" fill="none"/>
+        <path d="M 250 170 Q 252 188 254 208" fill="none"/>
       </g>
 
-      <!-- Lid dome -->
-      <path d="M 72 100
-               Q 72 56 190 56
-               Q 308 56 308 100
-               L 308 108 L 72 108 Z"
-            fill="url(#g_lid)"
-            stroke="rgba(196,117,133,0.5)" stroke-width="1.4"/>
-      <!-- Lid highlight blob -->
-      <ellipse cx="138" cy="76" rx="44" ry="16" fill="url(#g_lidShine)" opacity="0.85"/>
-      <!-- Smaller secondary lid highlight -->
-      <ellipse cx="245" cy="68" rx="14" ry="4" fill="rgba(255,255,255,0.55)" opacity="0.6"/>
+      <!-- ====== Big bow (left wing) ====== -->
+      <path d="M 188 178
+               C 152 168 110 178 102 215
+               C 100 240 122 252 152 248
+               C 174 245 188 230 188 208 Z"
+            fill="url(#g_bow)"
+            stroke="#c8657d" stroke-width="2" stroke-linejoin="round"/>
+      <!-- Left wing inner fold line -->
+      <path d="M 135 205 Q 148 218 162 220" fill="none" stroke="#c8657d" stroke-width="1.3" opacity="0.7"/>
+      <!-- Left wing stitching -->
+      <path d="M 116 200 Q 130 232 148 240" fill="none" stroke="#fff" stroke-width="1" stroke-dasharray="2 3" opacity="0.5"/>
 
-      <!-- Lid screw band (pink ribbon) -->
-      <rect x="62" y="108" width="256" height="22" rx="3"
-            fill="url(#g_band)"
-            stroke="rgba(155,70,90,0.4)" stroke-width="1"/>
-      <text x="190" y="124" text-anchor="middle"
-            font-family="Cormorant Garamond, serif"
-            font-style="italic" font-weight="600"
-            font-size="14" fill="white" letter-spacing="3">k.praewa</text>
-      <!-- Tiny hearts on each end of the band -->
-      <path d="M 76 119 c -2.5,-3 -6,-1.5 -6,1.5 c 0,2.5 2.5,4 6,7 c 3.5,-3 6,-4.5 6,-7 c 0,-3 -3.5,-4.5 -6,-1.5 z" fill="rgba(255,255,255,0.85)"/>
-      <path d="M 304 119 c -2.5,-3 -6,-1.5 -6,1.5 c 0,2.5 2.5,4 6,7 c 3.5,-3 6,-4.5 6,-7 c 0,-3 -3.5,-4.5 -6,-1.5 z" fill="rgba(255,255,255,0.85)"/>
+      <!-- ====== Big bow (right wing) ====== -->
+      <path d="M 192 178
+               C 228 168 270 178 278 215
+               C 280 240 258 252 228 248
+               C 206 245 192 230 192 208 Z"
+            fill="url(#g_bow)"
+            stroke="#c8657d" stroke-width="2" stroke-linejoin="round"/>
+      <!-- Right wing inner fold -->
+      <path d="M 245 205 Q 232 218 218 220" fill="none" stroke="#c8657d" stroke-width="1.3" opacity="0.7"/>
+      <!-- Right wing stitching -->
+      <path d="M 264 200 Q 250 232 232 240" fill="none" stroke="#fff" stroke-width="1" stroke-dasharray="2 3" opacity="0.5"/>
 
-      <!-- Body (chubby cute jar) -->
-      <path d="M 56 132
-               Q 50 144 50 162
-               L 50 470
-               Q 50 510 100 510
-               L 280 510
-               Q 330 510 330 470
-               L 330 162
-               Q 330 144 324 132 Z"
-            fill="url(#g_body)"
-            stroke="rgba(255,182,200,0.7)" stroke-width="2"/>
+      <!-- ====== Bow tails ====== -->
+      <path d="M 174 220
+               L 158 282
+               L 172 285
+               L 184 274 Z"
+            fill="url(#g_bow)" stroke="#c8657d" stroke-width="2" stroke-linejoin="round"/>
+      <path d="M 206 220
+               L 222 282
+               L 208 285
+               L 196 274 Z"
+            fill="url(#g_bow)" stroke="#c8657d" stroke-width="2" stroke-linejoin="round"/>
+      <!-- Tail stitching -->
+      <line x1="170" y1="226" x2="166" y2="278" stroke="#fff" stroke-width="0.9" stroke-dasharray="2 3" opacity="0.55"/>
+      <line x1="210" y1="226" x2="214" y2="278" stroke="#fff" stroke-width="0.9" stroke-dasharray="2 3" opacity="0.55"/>
 
-      <!-- Bottom inner shadow (depth) -->
-      <ellipse cx="190" cy="500" rx="123" ry="9" fill="rgba(184,92,112,0.22)"/>
-      <ellipse cx="190" cy="506" rx="105" ry="4" fill="rgba(184,92,112,0.15)"/>
+      <!-- ====== Center knot ====== -->
+      <ellipse cx="190" cy="205" rx="18" ry="22" fill="url(#g_knot)" stroke="#a8556c" stroke-width="2"/>
+      <!-- Knot vertical line for depth -->
+      <path d="M 178 188 Q 178 205 178 222" stroke="#a8556c" stroke-width="1" fill="none" opacity="0.5"/>
+      <path d="M 202 188 Q 202 205 202 222" stroke="#a8556c" stroke-width="1" fill="none" opacity="0.5"/>
 
-      <!-- Vertical glass highlights -->
-      <path d="M 72 175 L 72 475" stroke="url(#g_shine)" stroke-width="6" opacity="0.85"/>
-      <path d="M 86 200 L 86 460" stroke="rgba(255,255,255,0.18)" stroke-width="1.6"/>
-      <path d="M 308 190 L 308 465" stroke="url(#g_shine)" stroke-width="3" opacity="0.55"/>
-      <path d="M 294 220 L 294 440" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
+      <!-- ====== Heart on knot ====== -->
+      <path d="M 190 200
+               c -6,-7 -16,-3 -12,5
+               c 3,7 12,13 12,13
+               c 0,0 9,-6 12,-13
+               c 4,-8 -6,-12 -12,-5 Z"
+            fill="url(#g_heart)" stroke="#a8556c" stroke-width="1.4"/>
+      <ellipse cx="186" cy="204" rx="2" ry="3" fill="rgba(255,255,255,0.8)" opacity="0.85"/>
 
-      <!-- ✨ Sparkles outside the gift area -->
-      <g fill="rgba(255,255,255,0.75)">
-        <path d="M 28 100 l 1.5 -4 l 1.5 4 l 4 1.5 l -4 1.5 l -1.5 4 l -1.5 -4 l -4 -1.5 z"/>
-        <path d="M 352 90 l 1.5 -4 l 1.5 4 l 4 1.5 l -4 1.5 l -1.5 4 l -1.5 -4 l -4 -1.5 z"/>
-      </g>
-      <g fill="rgba(255,180,200,0.65)">
-        <path d="M 22 200 l 1.2 -3.5 l 1.2 3.5 l 3.5 1.2 l -3.5 1.2 l -1.2 3.5 l -1.2 -3.5 l -3.5 -1.2 z"/>
-        <path d="M 358 300 l 1.2 -3.5 l 1.2 3.5 l 3.5 1.2 l -3.5 1.2 l -1.2 3.5 l -1.2 -3.5 l -3.5 -1.2 z"/>
+      <!-- ====== Hanging chain + heart pendant ====== -->
+      <line x1="190" y1="228" x2="190" y2="252" stroke="#d4677c" stroke-width="1.4"/>
+      <!-- Gold ring -->
+      <ellipse cx="190" cy="254" rx="4.5" ry="3"
+               fill="#f5d68a" stroke="#b48a3e" stroke-width="0.9"/>
+      <!-- Hanging heart -->
+      <path d="M 190 262
+               c -9,-11 -22,-4 -17,7
+               c 4,9 17,20 17,20
+               c 0,0 13,-11 17,-20
+               c 5,-11 -8,-18 -17,-7 Z"
+            fill="url(#g_heart)" stroke="#a8556c" stroke-width="1.4"/>
+      <ellipse cx="184" cy="272" rx="3" ry="5" fill="rgba(255,255,255,0.75)" opacity="0.85"/>
+
+      <!-- ====== Sparkles around the outside ====== -->
+      <g fill="#f29ab1" opacity="0.75">
+        <path d="M 22 230 l 1.5 -5 l 1.5 5 l 5 1.5 l -5 1.5 l -1.5 5 l -1.5 -5 l -5 -1.5 z"/>
+        <path d="M 354 290 l 1.5 -5 l 1.5 5 l 5 1.5 l -5 1.5 l -1.5 5 l -1.5 -5 l -5 -1.5 z"/>
         <path d="M 30 380 l 1 -3 l 1 3 l 3 1 l -3 1 l -1 3 l -1 -3 l -3 -1 z"/>
+        <path d="M 350 420 l 1 -3 l 1 3 l 3 1 l -3 1 l -1 3 l -1 -3 l -3 -1 z"/>
+      </g>
+      <g fill="#ffabc2" opacity="0.6">
+        <path d="M 14 180 c -2,-3 -6,-1.5 -5,1.5 c 1,2 5,4 5,5 c 0,0 4,-3 5,-5 c 1,-3 -3,-4.5 -5,-1.5 z"/>
+        <path d="M 366 200 c -2,-3 -6,-1.5 -5,1.5 c 1,2 5,4 5,5 c 0,0 4,-3 5,-5 c 1,-3 -3,-4.5 -5,-1.5 z"/>
+        <path d="M 18 460 c -2,-3 -6,-1.5 -5,1.5 c 1,2 5,4 5,5 c 0,0 4,-3 5,-5 c 1,-3 -3,-4.5 -5,-1.5 z"/>
       </g>
     </svg>
 
