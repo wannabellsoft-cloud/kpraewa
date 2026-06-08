@@ -78,6 +78,20 @@ function createApp() {
     res.json(realtime.clientConfig());
   });
 
+  // ---- Realtime health check (no auth — handy for debugging) ----
+  app.get('/api/health/realtime', async (_req, res) => {
+    const result = await realtime.emit('debug:ping', { at: Date.now() });
+    res.json({
+      env: {
+        PUSHER_APP_ID: process.env.PUSHER_APP_ID ? 'set' : 'MISSING',
+        PUSHER_KEY: process.env.PUSHER_KEY ? 'set' : 'MISSING',
+        PUSHER_SECRET: process.env.PUSHER_SECRET ? 'set (hidden)' : 'MISSING',
+        PUSHER_CLUSTER: process.env.PUSHER_CLUSTER || '(default ap1)'
+      },
+      triggerResult: result
+    });
+  });
+
   // ---- PromptPay QR ----
   app.get('/api/qr', async (req, res) => {
     try {
@@ -306,8 +320,8 @@ function createApp() {
       receivedAt: new Date().toISOString(),
       test: !!b.test
     };
-    await realtime.emit('jar:gift', gift);
-    res.json({ ok: true, gift });
+    const rt = await realtime.emit('jar:gift', gift);
+    res.json({ ok: true, gift, realtime: rt });
   });
 
   // ---- Jar: clear (reset all gifts on overlay) ----
