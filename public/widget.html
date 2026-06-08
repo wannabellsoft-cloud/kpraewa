@@ -336,6 +336,46 @@
         <button class="btn ghost" id="testGiftDiamond" type="button">Send diamond ×10</button>
         <button class="btn ghost danger" id="clearJarBtn" type="button">Clear jar</button>
       </div>
+
+      <div class="divider-section">
+        <label class="field-label" style="margin-bottom: 10px;">Jar overlay</label>
+
+        <div class="field" style="margin-bottom: 14px;">
+          <label class="field-label" style="font-size: 10px; margin-bottom: 8px;">Theme</label>
+          <div class="theme-picker" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+            <label class="theme-option" data-theme="glass">
+              <input type="radio" name="jarTheme" value="glass" />
+              <span class="theme-name">Glass jar</span>
+              <span class="theme-sub">Cute mason · pink</span>
+            </label>
+            <label class="theme-option" data-theme="lab">
+              <input type="radio" name="jarTheme" value="lab" />
+              <span class="theme-name">Lab flask</span>
+              <span class="theme-sub">Chemistry · teal</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="field">
+            <div class="range-row">
+              <label class="field-label" style="margin-bottom: 0;">Gift base size</label>
+              <span class="val"><span id="jarBaseSizeLbl">56</span>px</span>
+            </div>
+            <input type="range" min="32" max="120" step="2" data-path="jar.baseSize" id="jarBaseSize" />
+          </div>
+          <div class="field">
+            <label class="field-label">Minimum diamonds</label>
+            <input type="number" min="0" max="10000" step="1" data-path="jar.minDiamonds" id="jarMinDiamonds" />
+            <div class="hint">Gifts below this price are hidden from the jar.</div>
+          </div>
+        </div>
+
+        <label class="checkbox">
+          <input type="checkbox" data-path="jar.scaleByDiamonds" />
+          <span>Scale gifts by diamond price (pricier gifts get bigger)</span>
+        </label>
+      </div>
     </section>
 
     <section class="card">
@@ -400,7 +440,19 @@ function updateLabels() {
   $('#brLbl').textContent = SETTINGS.alert?.borderRadius ?? 16;
   $('#rateLbl').textContent = (SETTINGS.tts?.rate ?? 1).toFixed(1);
   $('#volLbl').textContent = Math.round((SETTINGS.sound?.volume ?? 0.7) * 100);
+  $('#jarBaseSizeLbl').textContent = SETTINGS.jar?.baseSize ?? 56;
   updateVoiceTemplateState();
+  updateThemePicker();
+}
+
+function updateThemePicker() {
+  const cur = SETTINGS.jar?.theme || 'glass';
+  document.querySelectorAll('.theme-option').forEach(el => {
+    const active = el.dataset.theme === cur;
+    el.classList.toggle('active', active);
+    const rb = el.querySelector('input[type=radio]');
+    if (rb) rb.checked = active;
+  });
 }
 
 function updateVoiceTemplateState() {
@@ -604,6 +656,18 @@ $('#applyHandleBtn').addEventListener('click', async () => {
 });
 
 loadCurrentHandle();
+
+// ---- Theme picker (card click → select radio + save) ----
+document.querySelectorAll('.theme-option').forEach(el => {
+  el.addEventListener('click', () => {
+    const t = el.dataset.theme;
+    SETTINGS.jar = SETTINGS.jar || {};
+    SETTINGS.jar.theme = t;
+    updateThemePicker();
+    scheduleAutoSave();
+    toast('Theme: ' + t);
+  });
+});
 
 // Realtime donation hook is bound up top when RealtimeClient connects
 

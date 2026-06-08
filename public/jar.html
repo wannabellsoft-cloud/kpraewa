@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <title>Gift Jar (OBS)</title>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Sarabun:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=JetBrains+Mono:wght@500&family=Sarabun:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
   html, body {
     margin: 0; padding: 0;
@@ -12,6 +12,7 @@
     height: 100vh; width: 100vw;
     font-family: 'Sarabun', sans-serif;
     color: #fff;
+    --gift-base: 56px;
   }
 
   .stage {
@@ -23,7 +24,7 @@
     padding-bottom: 32px;
   }
 
-  /* ===== Header (gift counters) ===== */
+  /* ===== Header ===== */
   .header {
     position: absolute;
     top: 24px; left: 50%;
@@ -60,14 +61,19 @@
     margin-top: 6px;
     text-shadow: 0 2px 6px rgba(0,0,0,0.6);
   }
+  /* Lab theme tweaks the header palette */
+  .stage.theme-lab .header .count {
+    color: #d6ffeb;
+    text-shadow: 0 4px 16px rgba(90, 220, 200, 0.65), 0 0 24px rgba(120, 240, 220, 0.4);
+  }
+  .stage.theme-lab .header .sub { color: rgba(214,255,235,0.7); }
 
-  /* ===== Jar ===== */
+  /* ===== Jar container ===== */
   .jar-container {
     position: relative;
     width: 380px;
     height: 540px;
   }
-
   .jar-svg {
     position: absolute;
     inset: 0;
@@ -77,23 +83,36 @@
     filter: drop-shadow(0 30px 40px rgba(0,0,0,0.35));
   }
 
-  /* Mask the gift area so falling items stay inside the jar shape */
+  /* Glass-theme gift area (mason jar body) */
   .jar-content {
     position: absolute;
-    /* tuned to match the SVG glass body */
     left: 36px;
     right: 36px;
-    top: 92px;
+    top: 110px;
     bottom: 50px;
     overflow: hidden;
     border-radius: 0 0 100px 100px / 0 0 50px 50px;
     z-index: 2;
   }
+  /* Lab-theme gift area (Erlenmeyer flask body — wider bottom) */
+  .stage.theme-lab .jar-content {
+    left: 56px;
+    right: 56px;
+    top: 230px;
+    bottom: 40px;
+    border-radius: 0 0 70px 70px / 0 0 40px 40px;
+  }
 
-  /* Each gift floating down */
+  /* ===== Theme show/hide ===== */
+  .theme-svg { display: none; }
+  .stage.theme-glass .theme-glass { display: block; }
+  .stage.theme-lab   .theme-lab   { display: block; }
+
+  /* ===== Gift element ===== */
   .gift {
     position: absolute;
-    width: 60px; height: 60px;
+    width: var(--gift-base);
+    height: var(--gift-base);
     display: flex; align-items: center; justify-content: center;
     border-radius: 14px;
     font-weight: 700;
@@ -107,7 +126,6 @@
     user-select: none;
     overflow: hidden;
   }
-  /* When a TikTok gift image URL exists we go transparent — let the image be the gift */
   .gift.has-image {
     background: transparent !important;
     border-radius: 12px;
@@ -120,18 +138,24 @@
     display: block;
     filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
   }
-  /* Fallback glyph (when no TikTok image) */
-  .gift.no-image {
-    color: rgba(0,0,0,0.55);
-  }
-  .gift.combo-2  { width: 68px; height: 68px; font-size: 24px; }
-  .gift.combo-5  { width: 78px; height: 78px; font-size: 26px; }
-  .gift.combo-10 { width: 92px; height: 92px; font-size: 30px; }
-  .gift.combo-50 { width: 108px; height: 108px; font-size: 36px; }
+  .gift.no-image { color: rgba(0,0,0,0.55); }
+  .gift.combo-2  { width: calc(var(--gift-base) * 1.18); height: calc(var(--gift-base) * 1.18); }
+  .gift.combo-5  { width: calc(var(--gift-base) * 1.35); height: calc(var(--gift-base) * 1.35); }
+  .gift.combo-10 { width: calc(var(--gift-base) * 1.6);  height: calc(var(--gift-base) * 1.6); }
+  .gift.combo-50 { width: calc(var(--gift-base) * 1.85); height: calc(var(--gift-base) * 1.85); }
+  .gift.tier-pricey { box-shadow:
+    inset 0 -6px 14px rgba(0,0,0,0.18),
+    inset 0 3px 6px rgba(255,255,255,0.4),
+    0 6px 22px rgba(255,180,120,0.5),
+    0 0 14px rgba(255,200,140,0.5); }
+  .gift.tier-luxe { box-shadow:
+    inset 0 -6px 14px rgba(0,0,0,0.2),
+    inset 0 3px 6px rgba(255,255,255,0.45),
+    0 8px 28px rgba(255,120,180,0.65),
+    0 0 22px rgba(255,140,200,0.7); }
 
-  /* falling animation — quick drop + bounce */
   @keyframes fall {
-    0%   { transform: translateY(-150px) rotate(var(--start-r, -30deg)); opacity: 0; }
+    0%   { transform: translateY(-180px) rotate(var(--start-r, -30deg)); opacity: 0; }
     15%  { opacity: 1; }
     70%  { transform: translateY(var(--land-y)) rotate(var(--land-r, 0deg)); }
     82%  { transform: translateY(calc(var(--land-y) - 14px)) rotate(var(--land-r, 0deg)); }
@@ -140,7 +164,6 @@
   }
   .gift.falling { animation: fall var(--fall-dur, 1.4s) cubic-bezier(.45,.05,.7,1) forwards; }
 
-  /* combo flash */
   @keyframes pop {
     0% { transform: scale(0); opacity: 0; }
     50% { transform: scale(1.15); opacity: 1; }
@@ -159,7 +182,7 @@
     z-index: 5;
   }
 
-  /* Top gifter banner */
+  /* Latest gifter banner */
   .latest {
     position: absolute;
     bottom: 28px; left: 50%;
@@ -184,6 +207,9 @@
     overflow: hidden;
     flex-shrink: 0;
   }
+  .stage.theme-lab .latest .avatar {
+    background: linear-gradient(135deg, #5ed4c8, #2a8076);
+  }
   .latest .avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
   .latest .info { display: flex; flex-direction: column; line-height: 1.15; }
   .latest .info .who { font-size: 14px; font-weight: 700; color: #fff; }
@@ -195,6 +221,26 @@
     font-weight: 500;
   }
   .latest .info .what em { color: #ffd166; font-style: normal; font-weight: 700; }
+  .stage.theme-lab .latest .info .what { color: rgba(214,255,235,0.85); }
+  .stage.theme-lab .latest .info .what em { color: #9ef0d8; }
+
+  /* Lab theme — bubbles rising through the liquid */
+  .bubble {
+    position: absolute;
+    bottom: 50px;
+    width: 6px; height: 6px;
+    background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.9), rgba(255,255,255,0.3));
+    border-radius: 50%;
+    opacity: 0;
+    animation: rise 3.4s ease-in infinite;
+    pointer-events: none;
+    z-index: 3;
+  }
+  @keyframes rise {
+    0%   { transform: translateY(0) translateX(0); opacity: 0; }
+    10%  { opacity: 0.9; }
+    100% { transform: translateY(-180px) translateX(var(--drift, 0px)); opacity: 0; }
+  }
 </style>
 </head>
 <body>
@@ -205,7 +251,7 @@
   font-size: 11px; padding: 4px 10px; border-radius: 999px;
   letter-spacing: 0.08em; opacity: 0.6;">connecting…</div>
 
-<div class="stage">
+<div class="stage theme-glass" id="stage">
 
   <div class="header">
     <div class="label">Gifts received</div>
@@ -215,64 +261,179 @@
 
   <div class="jar-container" id="jarContainer">
 
-    <!-- Mason-jar SVG: rim, neck, body, label band -->
-    <svg class="jar-svg" viewBox="0 0 380 540" xmlns="http://www.w3.org/2000/svg">
+    <!-- ========== Glass jar (cute mason jar) ========== -->
+    <svg class="jar-svg theme-svg theme-glass" viewBox="0 0 380 540" xmlns="http://www.w3.org/2000/svg">
       <defs>
-        <linearGradient id="glass" x1="0" x2="1" y1="0" y2="1">
-          <stop offset="0%" stop-color="rgba(255,255,255,0.25)"/>
-          <stop offset="50%" stop-color="rgba(255,255,255,0.05)"/>
-          <stop offset="100%" stop-color="rgba(255,255,255,0.18)"/>
+        <linearGradient id="g_glass" x1="0" x2="1" y1="0" y2="1">
+          <stop offset="0%" stop-color="rgba(255,255,255,0.28)"/>
+          <stop offset="50%" stop-color="rgba(255,255,255,0.06)"/>
+          <stop offset="100%" stop-color="rgba(255,255,255,0.22)"/>
         </linearGradient>
-        <linearGradient id="rim" x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0%" stop-color="rgba(255,255,255,0.6)"/>
-          <stop offset="100%" stop-color="rgba(255,255,255,0.25)"/>
+        <linearGradient id="g_rim" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stop-color="rgba(255,255,255,0.65)"/>
+          <stop offset="100%" stop-color="rgba(255,255,255,0.3)"/>
         </linearGradient>
-        <linearGradient id="ribbon" x1="0" x2="1" y1="0" y2="0">
+        <linearGradient id="g_ribbon" x1="0" x2="1" y1="0" y2="0">
           <stop offset="0%" stop-color="#b54d61"/>
           <stop offset="50%" stop-color="#e093a1"/>
           <stop offset="100%" stop-color="#b54d61"/>
         </linearGradient>
-        <linearGradient id="shine" x1="0" x2="0" y1="0" y2="1">
+        <linearGradient id="g_shine" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stop-color="rgba(255,255,255,0.55)"/>
+          <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+        </linearGradient>
+      </defs>
+
+      <!-- Lid top -->
+      <ellipse cx="190" cy="46" rx="142" ry="8" fill="rgba(255,255,255,0.45)"/>
+      <rect x="48" y="42" width="284" height="20" rx="6"
+            fill="url(#g_rim)" stroke="rgba(255,255,255,0.55)" stroke-width="1.5"/>
+
+      <!-- Lid screw band -->
+      <rect x="40" y="60" width="300" height="42" rx="8"
+            fill="url(#g_rim)" stroke="rgba(255,255,255,0.55)" stroke-width="1.5"/>
+      <!-- Cute embossed dots on lid -->
+      <circle cx="80" cy="81" r="2" fill="rgba(255,255,255,0.5)"/>
+      <circle cx="300" cy="81" r="2" fill="rgba(255,255,255,0.5)"/>
+
+      <!-- Neck (slightly tapered for the cute curve) -->
+      <path d="M 48 102 Q 48 120 56 130 L 56 140 L 324 140 L 324 130 Q 332 120 332 102 Z"
+            fill="url(#g_glass)" stroke="rgba(255,255,255,0.55)" stroke-width="2"/>
+
+      <!-- Body (rounder, like a hug) -->
+      <path d="M 56 140
+               L 56 460
+               Q 56 510 110 510
+               L 270 510
+               Q 324 510 324 460
+               L 324 140
+               Z"
+            fill="url(#g_glass)"
+            stroke="rgba(255,255,255,0.65)"
+            stroke-width="2"/>
+
+      <!-- Decorative pink ribbon -->
+      <rect x="56" y="170" width="268" height="26" fill="url(#g_ribbon)" opacity="0.9"/>
+      <text x="190" y="188" text-anchor="middle"
+            font-family="Cormorant Garamond, serif"
+            font-style="italic" font-weight="600"
+            font-size="16" fill="white" letter-spacing="2.5">k.praewa</text>
+      <!-- Little hearts on the ribbon ends -->
+      <path d="M 76 183 c -3,-4 -8,-2 -8,2 c 0,3 3,5 8,9 c 5,-4 8,-6 8,-9 c 0,-4 -5,-6 -8,-2 z" fill="rgba(255,255,255,0.7)"/>
+      <path d="M 304 183 c -3,-4 -8,-2 -8,2 c 0,3 3,5 8,9 c 5,-4 8,-6 8,-9 c 0,-4 -5,-6 -8,-2 z" fill="rgba(255,255,255,0.7)"/>
+
+      <!-- Vertical shine highlights -->
+      <path d="M 78 230 L 78 470" stroke="url(#g_shine)" stroke-width="7" opacity="0.55"/>
+      <path d="M 305 240 L 305 460" stroke="url(#g_shine)" stroke-width="4" opacity="0.35"/>
+
+      <!-- Star sparkles -->
+      <g fill="rgba(255,255,255,0.55)">
+        <path d="M 100 260 l 2 -6 l 2 6 l 6 2 l -6 2 l -2 6 l -2 -6 l -6 -2 z"/>
+        <path d="M 290 320 l 1.5 -4.5 l 1.5 4.5 l 4.5 1.5 l -4.5 1.5 l -1.5 4.5 l -1.5 -4.5 l -4.5 -1.5 z"/>
+        <path d="M 110 420 l 1 -3 l 1 3 l 3 1 l -3 1 l -1 3 l -1 -3 l -3 -1 z"/>
+      </g>
+    </svg>
+
+    <!-- ========== Lab Erlenmeyer flask ========== -->
+    <svg class="jar-svg theme-svg theme-lab" viewBox="0 0 380 540" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="l_glass" x1="0" x2="1" y1="0" y2="1">
+          <stop offset="0%" stop-color="rgba(180,255,235,0.18)"/>
+          <stop offset="50%" stop-color="rgba(140,220,210,0.05)"/>
+          <stop offset="100%" stop-color="rgba(180,255,235,0.15)"/>
+        </linearGradient>
+        <linearGradient id="l_liquid" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stop-color="#7be4d2"/>
+          <stop offset="60%" stop-color="#4ab8a6"/>
+          <stop offset="100%" stop-color="#296861"/>
+        </linearGradient>
+        <linearGradient id="l_cork" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stop-color="#c79c6a"/>
+          <stop offset="100%" stop-color="#7e5a35"/>
+        </linearGradient>
+        <linearGradient id="l_shine" x1="0" x2="0" y1="0" y2="1">
           <stop offset="0%" stop-color="rgba(255,255,255,0.5)"/>
           <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
         </linearGradient>
       </defs>
 
-      <!-- Body (curved sides) -->
-      <path d="M 50 92
+      <!-- Cork stopper -->
+      <ellipse cx="190" cy="40" rx="44" ry="6" fill="rgba(199,156,106,0.85)"/>
+      <rect x="146" y="38" width="88" height="22" rx="3" fill="url(#l_cork)" stroke="rgba(80,55,30,0.6)" stroke-width="1"/>
+      <line x1="160" y1="48" x2="220" y2="48" stroke="rgba(80,55,30,0.4)" stroke-width="0.8"/>
+
+      <!-- Neck (cylinder) -->
+      <rect x="153" y="60" width="74" height="160"
+            fill="url(#l_glass)"
+            stroke="rgba(190,250,230,0.6)" stroke-width="2"/>
+      <!-- Neck rim -->
+      <rect x="148" y="60" width="84" height="8" rx="2"
+            fill="rgba(190,250,230,0.4)"
+            stroke="rgba(190,250,230,0.6)" stroke-width="1.5"/>
+
+      <!-- Body (Erlenmeyer cone) -->
+      <path d="M 153 220
                L 50 460
                Q 50 510 100 510
                L 280 510
                Q 330 510 330 460
-               L 330 92
+               L 227 220
                Z"
-            fill="url(#glass)"
-            stroke="rgba(255,255,255,0.6)"
+            fill="url(#l_glass)"
+            stroke="rgba(190,250,230,0.7)"
             stroke-width="2"/>
 
-      <!-- Lid rim band -->
-      <rect x="40" y="60" width="300" height="36" rx="6"
-            fill="url(#rim)"
-            stroke="rgba(255,255,255,0.55)"
-            stroke-width="1.5"/>
-      <line x1="40" y1="92" x2="340" y2="92" stroke="rgba(255,255,255,0.6)" stroke-width="2"/>
+      <!-- Measurement marks on side -->
+      <g stroke="rgba(190,250,230,0.55)" stroke-width="1.2">
+        <line x1="78"  y1="320" x2="100" y2="320"/>
+        <line x1="68"  y1="380" x2="90"  y2="380"/>
+        <line x1="58"  y1="440" x2="80"  y2="440"/>
+      </g>
+      <g font-family="JetBrains Mono, monospace" font-size="10" fill="rgba(214,255,235,0.7)" text-anchor="end" letter-spacing="0.5">
+        <text x="75"  y="324">100</text>
+        <text x="65"  y="384">250</text>
+        <text x="55"  y="444">500</text>
+      </g>
 
-      <!-- Lid top -->
-      <rect x="55" y="38" width="270" height="26" rx="4"
-            fill="rgba(255,255,255,0.35)"
-            stroke="rgba(255,255,255,0.5)" stroke-width="1.5"/>
+      <!-- Bubbling liquid pool -->
+      <path d="M 60 470
+               L 60 460
+               Q 60 505 110 505
+               L 270 505
+               Q 320 505 320 460
+               L 320 470
+               Z"
+            fill="url(#l_liquid)" opacity="0.65"/>
+      <!-- Liquid surface line -->
+      <path d="M 60 470 Q 130 462 190 472 T 320 470"
+            fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="1.3"/>
 
-      <!-- Decorative ribbon around neck -->
-      <rect x="55" y="100" width="270" height="22" fill="url(#ribbon)" opacity="0.85"/>
-      <text x="190" y="116" text-anchor="middle"
+      <!-- Label band -->
+      <rect x="100" y="370" width="180" height="46" rx="6"
+            fill="rgba(20,40,38,0.55)"
+            stroke="rgba(190,250,230,0.4)" stroke-width="1"/>
+      <text x="190" y="392" text-anchor="middle"
             font-family="Cormorant Garamond, serif"
             font-style="italic" font-weight="600"
-            font-size="14" fill="white" letter-spacing="2">k.praewa</text>
+            font-size="14" fill="#d6ffeb" letter-spacing="2">k.praewa LAB</text>
+      <text x="190" y="408" text-anchor="middle"
+            font-family="JetBrains Mono, monospace"
+            font-size="9" fill="rgba(214,255,235,0.75)" letter-spacing="2">EXPERIMENT N°001</text>
 
-      <!-- Subtle vertical shine highlights on glass -->
-      <path d="M 70 130 L 70 470" stroke="url(#shine)" stroke-width="6" opacity="0.5"/>
-      <path d="M 305 140 L 305 460" stroke="url(#shine)" stroke-width="3" opacity="0.35"/>
+      <!-- Highlights -->
+      <path d="M 80 260 L 60 460" stroke="url(#l_shine)" stroke-width="6" opacity="0.5"/>
+      <path d="M 250 260 L 295 440" stroke="url(#l_shine)" stroke-width="3" opacity="0.3"/>
+
+      <!-- Tiny chemistry sparkles around the flask -->
+      <g fill="rgba(214,255,235,0.55)">
+        <path d="M 28 260 l 1.5 -4 l 1.5 4 l 4 1.5 l -4 1.5 l -1.5 4 l -1.5 -4 l -4 -1.5 z"/>
+        <path d="M 352 290 l 1.5 -4 l 1.5 4 l 4 1.5 l -4 1.5 l -1.5 4 l -1.5 -4 l -4 -1.5 z"/>
+        <path d="M 18 410 l 1 -3 l 1 3 l 3 1 l -3 1 l -1 3 l -1 -3 l -3 -1 z"/>
+      </g>
     </svg>
+
+    <!-- Bubbles (Lab theme only — CSS hides on Glass) -->
+    <div class="lab-bubbles" id="labBubbles"></div>
 
     <!-- Gifts pile up inside this -->
     <div class="jar-content" id="jarContent"></div>
@@ -293,18 +454,49 @@
 <script>
   const jarContent = document.getElementById('jarContent');
   const jarContainer = document.getElementById('jarContainer');
+  const stage = document.getElementById('stage');
   const countEl = document.getElementById('giftCount');
   const diamondEl = document.getElementById('diamondTotal');
   const latestBox = document.getElementById('latest');
   const latestWho = document.getElementById('latestWho');
   const latestWhat = document.getElementById('latestWhat');
   const latestAvatar = document.getElementById('latestAvatar');
+  const labBubblesBox = document.getElementById('labBubbles');
 
   let giftTotal = 0;
   let diamondTotal = 0;
   let latestHideTimer;
 
-  // Pretty colors / glyph for common TikTok gift types — fallback for unknown gifts
+  // Runtime settings — overridden by /api/settings + realtime updates
+  let SETTINGS = {
+    jar: { theme: 'glass', minDiamonds: 0, baseSize: 56, scaleByDiamonds: true }
+  };
+
+  function applyJarSettings(s) {
+    const j = s?.jar || {};
+    const theme = (j.theme === 'lab') ? 'lab' : 'glass';
+    stage.classList.toggle('theme-glass', theme === 'glass');
+    stage.classList.toggle('theme-lab',   theme === 'lab');
+    document.documentElement.style.setProperty('--gift-base', (j.baseSize || 56) + 'px');
+    SETTINGS = s;
+    // bubble layer presence
+    renderBubbles(theme === 'lab' ? 8 : 0);
+  }
+
+  function renderBubbles(n) {
+    labBubblesBox.innerHTML = '';
+    for (let i = 0; i < n; i++) {
+      const b = document.createElement('div');
+      b.className = 'bubble';
+      b.style.left = (60 + Math.random() * 260) + 'px';
+      b.style.setProperty('--drift', (Math.random() * 30 - 15) + 'px');
+      b.style.animationDelay = (i * 0.5) + 's';
+      b.style.animationDuration = (3 + Math.random() * 2) + 's';
+      labBubblesBox.appendChild(b);
+    }
+  }
+
+  // ===== Gift styling fallbacks (when no TikTok image URL) =====
   const GIFT_STYLES = {
     rose:       { bg: 'linear-gradient(135deg,#ffb8c5,#e093a1)', glyph: '✿' },
     heart:      { bg: 'linear-gradient(135deg,#ff8ca0,#d4677c)', glyph: '♥' },
@@ -314,10 +506,7 @@
     crown:      { bg: 'linear-gradient(135deg,#ffd56b,#b48a3e)', glyph: '♕' },
     cake:       { bg: 'linear-gradient(135deg,#ffcfd9,#f095a8)', glyph: '◉' },
     coffee:     { bg: 'linear-gradient(135deg,#d6a572,#8c5a30)', glyph: '◈' },
-    panda:      { bg: 'linear-gradient(135deg,#ffffff,#cccccc)', glyph: '◐' },
-    perfume:    { bg: 'linear-gradient(135deg,#e6c5e1,#a875b4)', glyph: '◆' },
     galaxy:     { bg: 'linear-gradient(135deg,#7f5af0,#3a1f6b)', glyph: '✦' },
-    lion:       { bg: 'linear-gradient(135deg,#f5b664,#c87b2c)', glyph: '◉' },
     universe:   { bg: 'linear-gradient(135deg,#5a4a8a,#1a1340)', glyph: '✧' },
     rainbow:    { bg: 'linear-gradient(135deg,#ff9aa2,#ffb482,#ffe28a,#9ee6a0,#9ad7e0,#bda2eb)', glyph: '◐' }
   };
@@ -334,19 +523,20 @@
     if (repeat >= 2)  return 'combo-2';
     return '';
   }
+  function pickTierClass(diamonds) {
+    if (diamonds >= 100) return 'tier-luxe';
+    if (diamonds >= 20)  return 'tier-pricey';
+    return '';
+  }
 
   function placeGift(gift) {
     const w = jarContent.clientWidth;
     const h = jarContent.clientHeight;
     const repeat = Math.max(1, gift.repeatCount || 1);
-
-    // Spawn (up to) N gifts staggered slightly for combos
     const drops = Math.min(repeat, 12);
     for (let i = 0; i < drops; i++) {
       setTimeout(() => spawnGift(gift, w, h), i * 90);
     }
-
-    // Combo flash for big sends
     if (repeat >= 5) {
       const flash = document.createElement('div');
       flash.className = 'combo-flash';
@@ -362,14 +552,13 @@
   function spawnGift(gift, w, h) {
     const s = styleFor(gift.giftType || gift.giftName);
     const el = document.createElement('div');
-    el.className = 'gift falling ' + pickComboClass(gift.repeatCount);
+    el.className = 'gift falling ' + pickComboClass(gift.repeatCount) + ' ' + pickTierClass(gift.diamondCount || 0);
     if (gift.giftPictureUrl) {
       el.classList.add('has-image');
       const img = document.createElement('img');
       img.src = gift.giftPictureUrl;
       img.alt = gift.giftName || '';
       img.onerror = () => {
-        // Image failed → fall back to colored circle with glyph
         img.remove();
         el.classList.remove('has-image');
         el.classList.add('no-image');
@@ -383,11 +572,15 @@
       el.textContent = s.glyph;
     }
 
-    // Random landing position
-    const size = 56;
+    // Diamond-based size bonus
+    if (SETTINGS?.jar?.scaleByDiamonds && gift.diamondCount > 0) {
+      const bonus = Math.min(0.6, Math.log10(1 + gift.diamondCount) * 0.18);
+      el.style.transform = `scale(${1 + bonus})`;
+    }
+
+    const size = el.offsetWidth || 56;
     const padX = 8;
-    const left = padX + Math.random() * (w - size - padX * 2);
-    // Random vertical near bottom — earlier gifts pile lower-ish
+    const left = padX + Math.random() * Math.max(0, (w - size - padX * 2));
     const baseLand = h - size - 8;
     const wobble = Math.random() * Math.min(180, h - 200);
     const landY = baseLand - wobble * 0.4;
@@ -401,13 +594,10 @@
 
     jarContent.appendChild(el);
 
-    // After settle, remove the falling animation class so it stays
     el.addEventListener('animationend', () => {
       el.classList.remove('falling');
-      el.style.transform = `translateY(${landY}px) rotate(${el.style.getPropertyValue('--land-r')})`;
     }, { once: true });
 
-    // Cap total elements so DOM doesn't explode
     const MAX = 80;
     while (jarContent.childElementCount > MAX) jarContent.firstElementChild.remove();
   }
@@ -416,7 +606,6 @@
     countEl.classList.add('bump');
     setTimeout(() => countEl.classList.remove('bump'), 320);
   }
-
   function showLatest(gift) {
     latestWho.textContent = gift.nickname || gift.uniqueId || 'Someone';
     const giftDisplay = gift.giftName + (gift.repeatCount > 1 ? ` ×${gift.repeatCount}` : '');
@@ -431,12 +620,17 @@
     clearTimeout(latestHideTimer);
     latestHideTimer = setTimeout(() => latestBox.classList.remove('show'), 4500);
   }
-
   function escapeHtml(s) {
     return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
 
   function onGift(gift) {
+    // Filter: skip gifts below minDiamonds
+    const min = SETTINGS?.jar?.minDiamonds || 0;
+    if (min > 0 && (gift.diamondCount || 0) < min) {
+      console.log('[Jar] skip — gift below minDiamonds', gift.giftName, gift.diamondCount, '<', min);
+      return;
+    }
     giftTotal += (gift.repeatCount || 1);
     diamondTotal += (gift.diamondCount || 0) * (gift.repeatCount || 1);
     countEl.textContent = giftTotal.toLocaleString();
@@ -445,7 +639,6 @@
     placeGift(gift);
     showLatest(gift);
   }
-
   function onClear() {
     jarContent.innerHTML = '';
     giftTotal = 0; diamondTotal = 0;
@@ -465,11 +658,14 @@
   RealtimeClient.connect().then(rt => {
     setStatus('● connected', 'rgba(40,120,60,0.8)', 3000);
     rt.on('jar:gift', d => { console.log('[Jar] gift received', d); onGift(d); });
-    rt.on('jar:clear', d => { console.log('[Jar] clear received'); onClear(); });
+    rt.on('jar:clear', () => { console.log('[Jar] clear received'); onClear(); });
+    rt.on('settings:update', s => { console.log('[Jar] settings updated'); applyJarSettings(s); });
   }).catch(e => {
     console.error('[Jar] realtime connect failed', e);
     setStatus('● realtime FAILED — check console', 'rgba(180,40,40,0.8)');
   });
+
+  fetch('/api/settings').then(r => r.json()).then(applyJarSettings);
 </script>
 </body>
 </html>
