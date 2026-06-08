@@ -116,28 +116,51 @@ async function postGift(payload) {
 // ---------- TikTok Live ----------
 let conn = null;
 let reconnectTimer = null;
+const dumpedSampleForName = new Set(); // gift names whose raw JSON we've dumped once
 
 // Walk a few likely paths to find a TikTok picture URL.
-// Uses the connector's helper which knows how to pick the best format
-// out of a TikTok protobuf url list.
 function pickUrl(imgObj) {
   if (!imgObj) return null;
+  if (typeof imgObj === 'string' && /^https?:\/\//i.test(imgObj)) return imgObj;
   try {
     if (typeof getPreferredPictureFormat === 'function') {
       const u = getPreferredPictureFormat(imgObj);
       if (u) return u;
     }
   } catch {}
-  // Manual fallbacks for various shapes
   return (
-    imgObj?.urlList?.[0]    // simplified protobuf
+    imgObj?.urlList?.[0]
     || imgObj?.url_list?.[0]
     || imgObj?.urls?.[0]
     || imgObj?.giftPictureUrl
     || imgObj?.url
     || imgObj?.uri
+    || imgObj?.thumb?.urlList?.[0]
     || null
   );
+}
+
+// Deep walk: find the first http(s) URL pointing at a tiktok cdn anywhere in the object.
+function deepFindTikTokUrl(obj, depth = 0) {
+  if (!obj || depth > 5) return null;
+  if (typeof obj === 'string') {
+    if (/^https?:\/\/[^"]*(tiktokcdn|tiktok|byteoversea)/i.test(obj)) return obj;
+    return null;
+  }
+  if (Array.isArray(obj)) {
+    for (const v of obj) {
+      const u = deepFindTikTokUrl(v, depth + 1);
+      if (u) return u;
+    }
+    return null;
+  }
+  if (typeof obj === 'object') {
+    for (const k of Object.keys(obj)) {
+      const u = deepFindTikTokUrl(obj[k], depth + 1);
+      if (u) return u;
+    }
+  }
+  return null;
 }
 
 function extractGift(data) {
@@ -147,16 +170,28 @@ function extractGift(data) {
             || data.giftName
             || `Gift#${data.giftId || '?'}`;
 
-  // Try every known place TikTok stuffs the gift image
+  // Direct string fields some TikTok versions use
+  const directGiftUrl =
+       data.giftDetails?.iconUrl
+    || data.giftDetails?.pictureUrl
+    || data.giftDetails?.giftPictureUrl
+    || data.gift?.iconUrl
+    || data.gift?.pictureUrl
+    || data.gift?.giftPictureUrl
+    || data.giftPictureUrl
+    || null;
+
   const giftPictureUrl =
-       pickUrl(data.giftDetails?.image)
+       directGiftUrl
+    || pickUrl(data.giftDetails?.image)
     || pickUrl(data.giftDetails?.giftImage)
     || pickUrl(data.giftDetails?.icon)
     || pickUrl(data.gift?.image)
     || pickUrl(data.gift?.giftImage)
     || pickUrl(data.gift?.icon)
     || pickUrl(data.giftImage)
-    || data.giftPictureUrl
+    || deepFindTikTokUrl(data.giftDetails)
+    || deepFindTikTokUrl(data.gift)
     || null;
 
   const profilePictureUrl =
@@ -225,12 +260,17 @@ async function start() {
 
     const payload = extractGift(data);
     log(`Gift received: ${payload.nickname} sent ${payload.giftName} ×${payload.repeatCount}` +
-        (payload.giftPictureUrl ? '  [image OK]' : '  [no image url]'));
-    if (opts.verbose && !payload.giftPictureUrl) {
-      // Help diagnose what keys are present so we can map them
-      console.log('  giftDetails keys:', Object.keys(data.giftDetails || {}).slice(0, 12));
-      console.log('  data keys:', Object.keys(data).filter(k => /gift|image|icon/i.test(k)).slice(0, 12));
+        (payload.giftPictureUrl ? `  [image: ${payload.giftPictureUrl.slice(0, 70)}…]` : '  [NO IMAGE URL]'));
+
+    // First-time-no-image: dump raw JSON so we can fix the extraction path.
+    if (!payload.giftPictureUrl && !dumpedSampleForName.has(payload.giftName)) {
+      dumpedSampleForName.add(payload.giftName);
+      console.log(`--- RAW gift JSON for "${payload.giftName}" (no image url found) ---`);
+      try { console.log(JSON.stringify(data, null, 2).slice(0, 4000)); }
+      catch (e) { console.log('  (could not stringify:', e.message, ')'); }
+      console.log('--- end RAW ---');
     }
+
     postGift(payload).catch(e => warn('post failed:', e.message));
   });
 
