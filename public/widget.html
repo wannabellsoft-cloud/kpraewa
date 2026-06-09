@@ -371,6 +371,15 @@
           </div>
         </div>
 
+        <div class="field" style="margin-top: 14px;">
+          <div class="range-row">
+            <label class="field-label" style="margin-bottom: 0;">Jar size</label>
+            <span class="val"><span id="jarScaleLbl">100</span>%</span>
+          </div>
+          <input type="range" min="60" max="160" step="5" data-mult="0.01" data-path="jar.jarScale" id="jarScale" />
+          <div class="hint">Shrink or enlarge the whole jar on the overlay.</div>
+        </div>
+
         <label class="checkbox">
           <input type="checkbox" data-path="jar.scaleByDiamonds" />
           <span>Scale gifts by diamond price (pricier gifts get bigger)</span>
@@ -452,6 +461,7 @@ function updateLabels() {
   $('#rateLbl').textContent = (SETTINGS.tts?.rate ?? 1).toFixed(1);
   $('#volLbl').textContent = Math.round((SETTINGS.sound?.volume ?? 0.7) * 100);
   $('#jarBaseSizeLbl').textContent = SETTINGS.jar?.baseSize ?? 56;
+  $('#jarScaleLbl').textContent = Math.round((SETTINGS.jar?.jarScale ?? 1) * 100);
   updateVoiceTemplateState();
   updateThemePicker();
 }

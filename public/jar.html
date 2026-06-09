@@ -81,13 +81,23 @@
     position: relative;
     width: 380px;
     height: 540px;
-    /* gentle living sway — origin at the base so it tips like a real jar */
-    transform-origin: 50% 94%;
-    animation: jarWobble 6.5s ease-in-out infinite;
+    z-index: 2;            /* above the physics layer so gifts sit behind the glass */
+    /* Scaled by jar.jarScale from settings. Origin at the base so the jar
+       always rests on the floor as it grows/shrinks. No wobble — the physics
+       walls are static and must stay aligned with the drawn glass. */
+    transform-origin: 50% 100%;
+    transform: scale(var(--jar-scale, 1));
   }
-  @keyframes jarWobble {
-    0%, 100% { transform: rotate(-1.2deg); }
-    50%      { transform: rotate(1.2deg); }
+
+  /* Full-viewport physics layer — gifts live here so they can overflow the jar
+     and spill onto the floor. Sits BEHIND the jar art (z-index 1) so gifts read
+     as being inside the glass, while overflow beside the jar shows normally. */
+  .physics-layer {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    overflow: visible;
   }
   .jar-svg {
     position: absolute;
@@ -159,6 +169,7 @@
   /* ===== Gift element ===== */
   .gift {
     position: absolute;
+    top: 0; left: 0;                /* physics drives position via transform */
     width: var(--gift-base);
     height: var(--gift-base);
     display: flex; align-items: center; justify-content: center;
@@ -170,8 +181,8 @@
       inset 0 -6px 14px rgba(0,0,0,0.15),
       inset 0 3px 6px rgba(255,255,255,0.35),
       0 4px 14px rgba(0,0,0,0.3);
-    transform-origin: 50% 100%;     /* squash onto its base when it lands */
-    will-change: transform, opacity;
+    transform-origin: 50% 50%;      /* rotate about centre to match the body */
+    will-change: transform;
     user-select: none;
     overflow: hidden;
   }
@@ -337,6 +348,9 @@
   letter-spacing: 0.08em; opacity: 0.6;">connecting…</div>
 
 <div class="stage theme-glass" id="stage">
+
+  <!-- Gifts (physics bodies) render here, behind the jar art -->
+  <div class="physics-layer" id="physicsLayer"></div>
 
   <div class="header">
     <div class="label">Gifts received</div>
@@ -609,9 +623,11 @@
 
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
 <script src="/assets/realtime-client.js"></script>
 <script>
   const jarContent = document.getElementById('jarContent');
+  const physicsLayer = document.getElementById('physicsLayer');
   const jarContainer = document.getElementById('jarContainer');
   const stage = document.getElementById('stage');
   const countEl = document.getElementById('giftCount');
@@ -625,8 +641,6 @@
   let giftTotal = 0;
   let diamondTotal = 0;
   let latestHideTimer;
-  // Physics state: every placed gift's bounding box so newcomers can stack on them.
-  let placedGifts = [];   // inside the jar
 
   // Runtime settings — overridden by /api/settings + realtime updates
   let SETTINGS = {
@@ -639,8 +653,13 @@
     stage.classList.toggle('theme-glass', theme === 'glass');
     stage.classList.toggle('theme-lab',   theme === 'lab');
     document.documentElement.style.setProperty('--gift-base', (j.baseSize || 56) + 'px');
+    // Whole-jar scale (jar.jarScale, default 1). Clamp to a sane range.
+    const scale = Math.max(0.5, Math.min(1.8, Number(j.jarScale) || 1));
+    document.documentElement.style.setProperty('--jar-scale', scale);
     SETTINGS = s;
     renderBubbles(theme === 'lab' ? 8 : 0);
+    // Theme/scale changed the jar geometry → rebuild the physics walls.
+    if (window.__physReady) buildWorld();
   }
 
   function renderBubbles(n) {
@@ -731,67 +750,132 @@
     }
   }
 
-  // ===== Stacking physics — INSIDE the jar =====
-  function findStackY(centerX, size) {
-    const h = jarContent.clientHeight;
-    let y = h - size - 4;
-    for (const p of placedGifts) {
-      const pCenterX = p.left + p.size / 2;
-      const horzDist = Math.abs(centerX - pCenterX);
-      // Tighter horizontal reach → gifts nestle close together, fewer gaps.
-      const minHorz = (size + p.size) / 2 * 0.66;
-      if (horzDist < minHorz) {
-        // Deeper overlap (sit ~34% into the gift below) → a dense, packed heap.
-        const candidate = p.top - size + Math.min(size, p.size) * 0.34;
-        if (candidate < y) y = candidate;
-      }
+  // ===================================================================
+  //  GRAVITY PHYSICS (Matter.js)
+  //  Gifts fall under gravity, funnel into the jar, fill it bottom-up,
+  //  pile into a mountain above the mouth, then spill over the wall tops
+  //  onto a full-width floor beside the jar.
+  // ===================================================================
+  const M = window.Matter;
+  let engine, world;
+  let physBodies = [];            // { body, el, size }
+  let staticBodies = [];
+  let WORLD = null;               // { toX, toY, cfg, ... }
+  const MAX_GIFTS = 200;          // hard cap so the sim stays smooth
+
+  // Wall geometry per theme, in SVG viewBox coords (0..380 x, 0..540 y).
+  // Walls STOP at `mouthY` so gifts can mound above it and overflow.
+  function wallConfigFor(theme) {
+    if (theme === 'lab') {
+      return {
+        mouthY: 222, baseY: 505,
+        segs: [
+          [153, 222, 50, 460], [50, 460, 96, 505],    // left cone wall
+          [227, 222, 330, 460], [330, 460, 284, 505], // right cone wall
+        ],
+        spawn: [168, 212],
+      };
     }
-    // Return the true stack height (may be negative when the pile would climb
-    // above the rim). The caller uses this to decide the jar is "full" and to
-    // recycle an existing slot instead of clamping a band at the top.
-    return y;
+    return {                                           // glass mason jar
+      mouthY: 188, baseY: 502,
+      segs: [
+        [72, 188, 72, 502],                            // left wall
+        [308, 188, 308, 502],                          // right wall
+      ],
+      spawn: [108, 272],
+    };
   }
 
-  // Gifts always stack INSIDE the jar (they may pile above the mouth as it fills).
-  function pickPlacement(size) {
-    const w = jarContent.clientWidth;
-    const h = jarContent.clientHeight;
-    const isLab = stage.classList.contains('theme-lab');
-    const candidates = [];
+  function addStatic(cx, cy, w, h, angle = 0) {
+    const b = M.Bodies.rectangle(cx, cy, w, h, { isStatic: true, friction: 0.6, restitution: 0, angle });
+    M.Composite.add(world, b);
+    staticBodies.push(b);
+    return b;
+  }
+  function addSeg(x1, y1, x2, y2, thick) {
+    const dx = x2 - x1, dy = y2 - y1;
+    addStatic((x1 + x2) / 2, (y1 + y2) / 2, Math.hypot(dx, dy) + thick, thick, Math.atan2(dy, dx));
+  }
 
-    for (let i = 0; i < 40; i++) {
-      let centerX;
-      if (isLab) {
-        centerX = w * 0.5 + (Math.random() - 0.5) * w * 0.88;
-      } else {
-        const padX = 4;
-        centerX = padX + size / 2 + Math.random() * Math.max(0, (w - size - padX * 2));
-      }
-      const left = centerX - size / 2;
-      if (left < 2 || left + size > w - 2) continue;
-      const top = findStackY(centerX, size);
+  // (Re)build the static world from the jar's on-screen rect + current theme.
+  function buildWorld() {
+    for (const b of staticBodies) M.Composite.remove(world, b);
+    staticBodies = [];
 
-      if (isLab) {
-        const cy = top + size / 2;
-        const yRatio = Math.max(0, Math.min(1, cy / h));
-        const halfwidth = 0.13 + (0.50 - 0.13) * yRatio;
-        const minCx = (0.5 - halfwidth) * w;
-        const maxCx = (0.5 + halfwidth) * w;
-        if (centerX < minCx || centerX > maxCx) continue;
-      }
-      candidates.push({ left, top, size });
+    const rect = jarContainer.getBoundingClientRect();
+    const sx = rect.width / 380, sy = rect.height / 540;
+    const toX = vx => rect.left + vx * sx;
+    const toY = vy => rect.top  + vy * sy;
+    const theme = stage.classList.contains('theme-lab') ? 'lab' : 'glass';
+    const cfg = wallConfigFor(theme);
+    WORLD = { rect, sx, sy, toX, toY, cfg };
+
+    const wallThick = Math.max(10, 14 * sx);
+    for (const [x1, y1, x2, y2] of cfg.segs) addSeg(toX(x1), toY(y1), toX(x2), toY(y2), wallThick);
+
+    // Full-width floor at the jar base — catches the jar pile AND the overflow.
+    const W = window.innerWidth, H = window.innerHeight;
+    addStatic(W / 2, toY(cfg.baseY) + 60, W * 1.4, 120);
+    // Side walls keep overflow on screen.
+    addStatic(-40, H / 2, 80, H * 3);
+    addStatic(W + 40, H / 2, 80, H * 3);
+  }
+
+  // Drop one gift element into the world as a falling body.
+  function physSpawn(el, size) {
+    if (!WORLD) buildWorld();
+    const { toX, toY, cfg } = WORLD;
+    const r = size / 2;
+    const cx = toX(cfg.spawn[0] + Math.random() * (cfg.spawn[1] - cfg.spawn[0]));
+    const cy = toY(cfg.mouthY) - 50 - Math.random() * 40;       // start above the mouth
+    const body = M.Bodies.circle(cx, cy, r * 0.94, {
+      friction: 0.5, frictionStatic: 0.8, restitution: 0.05, density: 0.0016,
+    });
+    M.Body.setAngle(body, (Math.random() - 0.5) * 0.5);
+    M.Composite.add(world, body);
+    physBodies.push({ body, el, size });
+    el.style.transform = `translate(${cx - r}px, ${cy - r}px)`;  // paint at spawn (no 0,0 flash)
+
+    while (physBodies.length > MAX_GIFTS) {
+      const old = physBodies.shift();
+      M.Composite.remove(world, old.body);
+      old.el?.remove();
     }
+  }
 
-    // Keep only placements that fit fully inside the jar body (top >= 0).
-    // If nothing fits, the jar is full → signal the caller to recycle a slot.
-    const fit = candidates.filter(c => c.top >= 0);
-    if (!fit.length) return { full: true };
+  // Pre-step the simulation so replayed gifts appear already settled on load.
+  function settleWorld(steps) {
+    for (let i = 0; i < steps; i++) M.Engine.update(engine, 1000 / 60);
+    syncDom();
+  }
 
-    fit.sort((a, b) => b.top - a.top);
-    const pickFrom = Math.min(5, fit.length);
-    const r = Math.pow(Math.random(), 2.4);
-    const idx = Math.floor(r * pickFrom);
-    return fit[idx];
+  function syncDom() {
+    for (const rec of physBodies) {
+      const p = rec.body.position, half = rec.size / 2;
+      rec.el.style.transform = `translate(${p.x - half}px, ${p.y - half}px) rotate(${rec.body.angle}rad)`;
+    }
+  }
+
+  let _loopRunning = false;
+  function physicsLoop() {
+    M.Engine.update(engine, 1000 / 60);
+    syncDom();
+    requestAnimationFrame(physicsLoop);
+  }
+  function startPhysics() {
+    if (_loopRunning) return;
+    _loopRunning = true;
+    requestAnimationFrame(physicsLoop);
+  }
+
+  function initPhysics() {
+    engine = M.Engine.create();
+    world = engine.world;
+    engine.gravity.y = 1.0;
+    buildWorld();
+    window.__physReady = true;
+    let rz;
+    window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(buildWorld, 200); });
   }
 
   function spawnGift(gift, w, h, silent = false) {
@@ -820,7 +904,7 @@
 
     // Append FIRST so offsetWidth reflects the real CSS size (driven by
     // --gift-base + combo class), then apply the diamond size bonus on top.
-    jarContent.appendChild(el);
+    physicsLayer.appendChild(el);
 
     if (SETTINGS?.jar?.scaleByDiamonds && gift.diamondCount > 0) {
       const extraScale = 1 + Math.min(0.6, Math.log10(1 + gift.diamondCount) * 0.18);
@@ -830,64 +914,7 @@
       el.style.height = (baseH * extraScale) + 'px';
     }
 
-    const size = el.offsetWidth || 56;
-    const pick = pickPlacement(size);
-    if (pick && pick.full) {
-      // Jar is full → recycle the oldest gift's slot in place so the heap stays
-      // visually full (no top-band + empty-bottom artifact). The new gift takes
-      // over the exact spot the removed one occupied.
-      const oldest = placedGifts.shift();
-      try { oldest?.element?.remove(); } catch {}
-      const slot = oldest
-        ? { left: oldest.left, top: oldest.top, size }
-        : { left: Math.max(0, (jarContent.clientWidth - size) / 2),
-            top: Math.max(0, jarContent.clientHeight - size - 4), size };
-      placeInside(el, size, slot, silent);
-    } else {
-      placeInside(el, size, pick, silent);
-    }
-  }
-
-  function placeInside(el, size, placement, silent) {
-    const left = placement.left, landY = placement.top;
-    const startR = (-20 + Math.random() * 40);
-    const landR  = (-12 + Math.random() * 24) * 0.4;
-    el.style.left = left + 'px';
-    el.style.top = '0px';
-    el.style.setProperty('--land-y', landY + 'px');
-    el.style.setProperty('--start-r', startR + 'deg');
-    el.style.setProperty('--land-r', landR + 'deg');
-    el.style.setProperty('--fall-dur', (1.0 + Math.random() * 0.5) + 's');
-
-    if (silent) {
-      el.style.transform = `translateY(${landY}px) rotate(${landR}deg)`;
-    } else {
-      el.classList.add('falling');
-      el.addEventListener('animationend', () => {
-        el.style.transform = `translateY(${landY}px) rotate(${landR}deg)`;
-        el.classList.remove('falling');
-        spawnPuff(left + size / 2, landY + size);
-      }, { once: true });
-    }
-
-    placedGifts.push({ left, top: landY, size, element: el });
-    // Hard safety cap only — normal fullness is handled by slot recycling in
-    // spawnGift, which keeps the heap full instead of trimming the bottom rows.
-    const MAX = 240;
-    while (placedGifts.length > MAX) {
-      const oldest = placedGifts.shift();
-      try { oldest.element?.remove(); } catch {}
-    }
-  }
-
-  // Soft landing puff at the gift's base, inside the jar
-  function spawnPuff(cx, cy) {
-    const p = document.createElement('div');
-    p.className = 'puff';
-    p.style.left = cx + 'px';
-    p.style.top = cy + 'px';
-    jarContent.appendChild(p);
-    setTimeout(() => p.remove(), 520);
+    physSpawn(el, el.offsetWidth || 56);
   }
 
   function bumpCounter() {
@@ -951,8 +978,12 @@
     showLatest(gift);
   }
   function onClear() {
-    jarContent.innerHTML = '';
-    placedGifts = [];
+    for (const rec of physBodies) {
+      try { M.Composite.remove(world, rec.body); } catch {}
+      rec.el?.remove();
+    }
+    physBodies = [];
+    physicsLayer.innerHTML = '';
     giftTotal = 0; diamondTotal = 0;
     countEl.textContent = '0';
     diamondEl.textContent = '0';
@@ -972,6 +1003,8 @@
     }
     countEl.textContent = giftTotal.toLocaleString();
     diamondEl.textContent = diamondTotal.toLocaleString();
+    // Pre-settle so the restored pile appears resting (not mid-air) on load.
+    settleWorld(260);
     console.log(`[Jar] restored ${list.length} gifts from previous session`);
   }
 
@@ -983,20 +1016,31 @@
     if (autoFadeMs) setTimeout(() => { status.style.opacity = '0'; status.style.transition = 'opacity 0.5s'; }, autoFadeMs);
   };
 
-  RealtimeClient.connect().then(rt => {
-    setStatus('● connected', 'rgba(40,120,60,0.8)', 3000);
-    rt.on('jar:gift', d => { console.log('[Jar] gift received', d); onGift(d); });
-    rt.on('jar:clear', () => { console.log('[Jar] clear received'); onClear(); });
-    rt.on('settings:update', s => { console.log('[Jar] settings updated'); applyJarSettings(s); });
-  }).catch(e => {
-    console.error('[Jar] realtime connect failed', e);
-    setStatus('● realtime FAILED — check console', 'rgba(180,40,40,0.8)');
-  });
+  function boot() {
+    if (!M) {
+      console.error('[Jar] Matter.js failed to load — gifts cannot render');
+      setStatus('● physics engine FAILED to load', 'rgba(180,40,40,0.8)');
+      return;
+    }
+    initPhysics();
 
-  fetch('/api/settings')
-    .then(r => r.json())
-    .then(s => { applyJarSettings(s); replayStoredGifts(); })
-    .catch(() => replayStoredGifts());
+    RealtimeClient.connect().then(rt => {
+      setStatus('● connected', 'rgba(40,120,60,0.8)', 3000);
+      rt.on('jar:gift', d => { console.log('[Jar] gift received', d); onGift(d); });
+      rt.on('jar:clear', () => { console.log('[Jar] clear received'); onClear(); });
+      rt.on('settings:update', s => { console.log('[Jar] settings updated'); applyJarSettings(s); });
+    }).catch(e => {
+      console.error('[Jar] realtime connect failed', e);
+      setStatus('● realtime FAILED — check console', 'rgba(180,40,40,0.8)');
+    });
+
+    fetch('/api/settings')
+      .then(r => r.json())
+      .then(s => { applyJarSettings(s); replayStoredGifts(); startPhysics(); })
+      .catch(() => { replayStoredGifts(); startPhysics(); });
+  }
+
+  boot();
 </script>
 </body>
 </html>
