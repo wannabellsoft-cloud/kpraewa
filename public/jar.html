@@ -368,9 +368,10 @@
     <svg class="jar-svg theme-svg theme-glass" viewBox="0 0 380 540" xmlns="http://www.w3.org/2000/svg">
       <defs>
         <radialGradient id="g_glass" cx="50%" cy="58%" r="60%">
-          <stop offset="0%"   stop-color="rgba(255,228,238,0.05)"/>
-          <stop offset="62%"  stop-color="rgba(255,205,220,0.14)"/>
-          <stop offset="100%" stop-color="rgba(240,150,180,0.30)"/>
+          <!-- Kept light so gifts behind the glass stay bright, not dull. -->
+          <stop offset="0%"   stop-color="rgba(255,235,243,0.03)"/>
+          <stop offset="62%"  stop-color="rgba(255,210,225,0.07)"/>
+          <stop offset="100%" stop-color="rgba(243,165,195,0.15)"/>
         </radialGradient>
         <linearGradient id="g_lid" x1="0" x2="0" y1="0" y2="1">
           <stop offset="0%"   stop-color="#ffdce5"/>
@@ -426,8 +427,8 @@
         <path d="M 72 188 L 72 450" fill="none" stroke="#e89bb0" stroke-width="1" opacity="0.55"/>
         <path d="M 308 188 L 308 450" fill="none" stroke="#e89bb0" stroke-width="1" opacity="0.5"/>
         <!-- pink pigment wash down each side -->
-        <path d="M 80 210 L 80 450" fill="none" stroke="url(#g_wash)" stroke-width="22" opacity="0.5"/>
-        <path d="M 300 210 L 300 450" fill="none" stroke="url(#g_wash)" stroke-width="20" opacity="0.45"/>
+        <path d="M 80 210 L 80 450" fill="none" stroke="url(#g_wash)" stroke-width="22" opacity="0.28"/>
+        <path d="M 300 210 L 300 450" fill="none" stroke="url(#g_wash)" stroke-width="20" opacity="0.25"/>
         <!-- left glass highlight streak (top-left light) -->
         <path d="M 88 200 Q 78 330 96 470"
               fill="none" stroke="rgba(255,255,255,0.8)" stroke-width="4"
@@ -777,12 +778,21 @@
       };
     }
     return {                                           // glass mason jar
-      mouthY: 188, baseY: 502,
+      // Walls are inset from the drawn glass (~x68/x312) and chamfer inward at
+      // the bottom to trace the rounded jar base, so gifts never poke past the
+      // glass edge or hang below the rounded corners.
+      mouthY: 188, baseY: 500,
       segs: [
-        [72, 188, 72, 502],                            // left wall
-        [308, 188, 308, 502],                          // right wall
+        [86, 190, 86, 448],                            // left wall (inset)
+        [86, 448, 102, 478],                           // left lower chamfer
+        [102, 478, 126, 500],                          // left corner → floor
+        [88, 444, 26, 508],                            // left OUTER deflector → beside jar
+        [294, 190, 294, 448],                          // right wall (inset)
+        [294, 448, 278, 478],                          // right lower chamfer
+        [278, 478, 254, 500],                          // right corner → floor
+        [292, 444, 354, 508],                          // right OUTER deflector → beside jar
       ],
-      spawn: [108, 272],
+      spawn: [112, 268],
     };
   }
 
