@@ -738,16 +738,17 @@
     for (const p of placedGifts) {
       const pCenterX = p.left + p.size / 2;
       const horzDist = Math.abs(centerX - pCenterX);
-      const minHorz = (size + p.size) / 2 * 0.85;
+      // Tighter horizontal reach → gifts nestle close together, fewer gaps.
+      const minHorz = (size + p.size) / 2 * 0.66;
       if (horzDist < minHorz) {
-        const candidate = p.top - size + Math.min(size, p.size) * 0.18;
+        // Deeper overlap (sit ~34% into the gift below) → a dense, packed heap.
+        const candidate = p.top - size + Math.min(size, p.size) * 0.34;
         if (candidate < y) y = candidate;
       }
     }
-    // Ceiling: the pile may mound a little above the rim but must stay around
-    // the jar mouth — never climb into an endless tower. Keeps it "in the jar".
-    const CEILING = -h * 0.20;
-    if (y < CEILING) y = CEILING;
+    // Ceiling: the pile fills the jar body but tops out at the rim (top:0) —
+    // it must never climb above the jar-content frame.
+    if (y < 0) y = 0;
     return y;
   }
 
