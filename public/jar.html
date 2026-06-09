@@ -746,9 +746,9 @@
         if (candidate < y) y = candidate;
       }
     }
-    // Ceiling: the pile fills the jar body but tops out at the rim (top:0) —
-    // it must never climb above the jar-content frame.
-    if (y < 0) y = 0;
+    // Return the true stack height (may be negative when the pile would climb
+    // above the rim). The caller uses this to decide the jar is "full" and to
+    // recycle an existing slot instead of clamping a band at the top.
     return y;
   }
 
@@ -782,16 +782,16 @@
       candidates.push({ left, top, size });
     }
 
-    if (!candidates.length) {
-      // Degenerate fallback: drop in the centre at the current pile height.
-      const cx = w / 2;
-      return { left: cx - size / 2, top: findStackY(cx, size), size };
-    }
-    candidates.sort((a, b) => b.top - a.top);
-    const pickFrom = Math.min(5, candidates.length);
+    // Keep only placements that fit fully inside the jar body (top >= 0).
+    // If nothing fits, the jar is full → signal the caller to recycle a slot.
+    const fit = candidates.filter(c => c.top >= 0);
+    if (!fit.length) return { full: true };
+
+    fit.sort((a, b) => b.top - a.top);
+    const pickFrom = Math.min(5, fit.length);
     const r = Math.pow(Math.random(), 2.4);
     const idx = Math.floor(r * pickFrom);
-    return candidates[idx];
+    return fit[idx];
   }
 
   function spawnGift(gift, w, h, silent = false) {
@@ -831,7 +831,21 @@
     }
 
     const size = el.offsetWidth || 56;
-    placeInside(el, size, pickPlacement(size), silent);
+    const pick = pickPlacement(size);
+    if (pick && pick.full) {
+      // Jar is full → recycle the oldest gift's slot in place so the heap stays
+      // visually full (no top-band + empty-bottom artifact). The new gift takes
+      // over the exact spot the removed one occupied.
+      const oldest = placedGifts.shift();
+      try { oldest?.element?.remove(); } catch {}
+      const slot = oldest
+        ? { left: oldest.left, top: oldest.top, size }
+        : { left: Math.max(0, (jarContent.clientWidth - size) / 2),
+            top: Math.max(0, jarContent.clientHeight - size - 4), size };
+      placeInside(el, size, slot, silent);
+    } else {
+      placeInside(el, size, pick, silent);
+    }
   }
 
   function placeInside(el, size, placement, silent) {
@@ -857,7 +871,9 @@
     }
 
     placedGifts.push({ left, top: landY, size, element: el });
-    const MAX = 90;
+    // Hard safety cap only — normal fullness is handled by slot recycling in
+    // spawnGift, which keeps the heap full instead of trimming the bottom rows.
+    const MAX = 240;
     while (placedGifts.length > MAX) {
       const oldest = placedGifts.shift();
       try { oldest.element?.remove(); } catch {}
