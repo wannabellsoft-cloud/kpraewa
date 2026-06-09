@@ -31,6 +31,7 @@
     transform: translateX(-50%);
     text-align: center;
     pointer-events: none;
+    z-index: 8;            /* stay above gifts that overflow the jar mouth */
   }
   .header .label {
     font-size: 11px;
@@ -103,9 +104,12 @@
     right: 72px;
     top: 186px;
     bottom: 36px;
-    overflow: hidden;
+    /* overflow visible + a clip-path that is unbounded upward (-260%) lets
+       the pile spill ABOVE the jar mouth when full, while the rounded
+       bottom corners are still traced so gifts hug the jar base. */
+    overflow: visible;
     clip-path: polygon(
-      0% 0%, 100% 0%,
+      0% -260%, 100% -260%,
       100% 86%,
       93% 95%, 82% 100%,
       18% 100%, 7% 95%,
@@ -119,10 +123,12 @@
     right: 50px;
     top: 220px;
     bottom: 30px;
+    overflow: visible;
     border-radius: 0 0 70px 70px / 0 0 40px 40px;
+    /* neck column opens upward (-400%) so a full flask overflows up the neck */
     clip-path: polygon(
-      36.5% 0%,
-      63.5% 0%,
+      36.5% -400%,
+      63.5% -400%,
       100% 96%,
       88% 100%,
       12% 100%,
@@ -404,9 +410,6 @@
         <!-- pink pigment wash down each side -->
         <path d="M 80 210 L 80 450" fill="none" stroke="url(#g_wash)" stroke-width="22" opacity="0.5"/>
         <path d="M 300 210 L 300 450" fill="none" stroke="url(#g_wash)" stroke-width="20" opacity="0.45"/>
-        <!-- settled pink at the bottom interior -->
-        <ellipse cx="190" cy="478" rx="116" ry="11" fill="rgba(245,166,187,0.40)"/>
-        <ellipse cx="190" cy="488" rx="94"  ry="6"  fill="rgba(245,166,187,0.28)"/>
         <!-- left glass highlight streak (top-left light) -->
         <path d="M 88 200 Q 78 330 96 470"
               fill="none" stroke="rgba(255,255,255,0.8)" stroke-width="4"
