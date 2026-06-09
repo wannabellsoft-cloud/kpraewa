@@ -117,6 +117,20 @@
     );
     z-index: 2;
   }
+  /* Floor OUTSIDE the jar — overflow gifts tumble down the sides and
+     pile on the ground left & right of the jar. Wider than the jar so the
+     pile can spread sideways; drawn in front of the jar glass (z-index 4). */
+  .ground-content {
+    position: absolute;
+    left: -150px;
+    right: -150px;
+    top: 0;
+    bottom: 0;
+    overflow: visible;
+    pointer-events: none;
+    z-index: 4;
+  }
+
   /* Lab-theme gift area — clip-path traces the Erlenmeyer cone. */
   .stage.theme-lab .jar-content {
     left: 50px;
@@ -212,6 +226,19 @@
     100% { transform: translateY(var(--land-y)) rotate(var(--land-r, 0deg)) scale(1); }
   }
   .gift.falling { animation: fall var(--fall-dur, 1.2s) cubic-bezier(.45,.05,.55,.95) forwards; }
+
+  /* Overflow gifts: emerge near the jar mouth, arc OUT to the side and
+     drop onto the floor (start-dx pulls the start toward jar centre). */
+  @keyframes fallOut {
+    0%   { transform: translate(var(--start-dx,0px), var(--mouth-y,150px)) rotate(var(--start-r,0deg)) scale(0.6); opacity: 0; }
+    12%  { opacity: 1; }
+    58%  { transform: translate(0px, var(--land-y)) rotate(var(--land-r,0deg)) scale(1); }
+    68%  { transform: translate(0px, var(--land-y)) rotate(var(--land-r,0deg)) scaleX(1.18) scaleY(0.80); }
+    80%  { transform: translate(0px, calc(var(--land-y) - 10px)) rotate(var(--land-r,0deg)) scaleX(0.93) scaleY(1.08); }
+    90%  { transform: translate(0px, var(--land-y)) rotate(var(--land-r,0deg)) scaleX(1.04) scaleY(0.96); }
+    100% { transform: translate(0px, var(--land-y)) rotate(var(--land-r,0deg)) scale(1); }
+  }
+  .gift.falling-out { animation: fallOut var(--fall-dur, 1.3s) cubic-bezier(.4,.05,.6,1) forwards; }
 
   /* Soft landing puff that blooms where a gift settles */
   .puff {
@@ -593,6 +620,9 @@
     <!-- Gifts pile up inside this -->
     <div class="jar-content" id="jarContent"></div>
 
+    <!-- Overflow gifts pile on the floor beside the jar -->
+    <div class="ground-content" id="groundContent"></div>
+
     <!-- Latest gifter banner -->
     <div class="latest" id="latest">
       <div class="avatar"><img id="latestAvatar" alt=""/></div>
@@ -608,6 +638,7 @@
 <script src="/assets/realtime-client.js"></script>
 <script>
   const jarContent = document.getElementById('jarContent');
+  const groundContent = document.getElementById('groundContent');
   const jarContainer = document.getElementById('jarContainer');
   const stage = document.getElementById('stage');
   const countEl = document.getElementById('giftCount');
@@ -622,7 +653,8 @@
   let diamondTotal = 0;
   let latestHideTimer;
   // Physics state: every placed gift's bounding box so newcomers can stack on them.
-  let placedGifts = [];
+  let placedGifts = [];   // inside the jar
+  let groundGifts = [];   // overflow pile on the floor beside the jar
 
   // Runtime settings — overridden by /api/settings + realtime updates
   let SETTINGS = {
@@ -727,7 +759,7 @@
     }
   }
 
-  // ===== Stacking physics =====
+  // ===== Stacking physics — INSIDE the jar =====
   function findStackY(centerX, size) {
     const h = jarContent.clientHeight;
     let y = h - size - 4;
@@ -743,6 +775,8 @@
     return y;
   }
 
+  // Fill the jar to ~the rim, then report full so overflow goes to the floor.
+  const INSIDE_CAP = -6;
   function pickPlacement(size) {
     const w = jarContent.clientWidth;
     const h = jarContent.clientHeight;
@@ -772,20 +806,76 @@
       candidates.push({ left, top, size });
     }
 
-    if (!candidates.length) {
-      return { left: w / 2 - size / 2, top: 0, size };
-    }
+    if (!candidates.length) return { full: true };
     candidates.sort((a, b) => b.top - a.top);
+    // Even the deepest resting spot sits above the rim → the jar is full.
+    if (candidates[0].top < INSIDE_CAP) return { full: true };
+
     const pickFrom = Math.min(5, candidates.length);
     const r = Math.pow(Math.random(), 2.4);
     const idx = Math.floor(r * pickFrom);
-    return candidates[idx];
+    return { placement: candidates[idx] };
+  }
+
+  // ===== Stacking physics — OUTSIDE on the floor =====
+  // Jar walls / floor expressed in ground-content local coords.
+  function groundMetrics() {
+    const gw = groundContent.clientWidth;
+    const gh = groundContent.clientHeight;
+    const inset = (gw - 380) / 2;          // jar-container is 380 wide
+    return {
+      gw, gh, inset,
+      leftWall:  inset + 68,               // jar body left wall
+      rightWall: inset + 312,              // jar body right wall
+      jarCenter: inset + 190,
+      floorY:    gh - 38                   // ground line ≈ jar base
+    };
+  }
+
+  function findGroundStackY(centerX, size, floorY) {
+    let y = floorY - size;
+    for (const p of groundGifts) {
+      const pc = p.left + p.size / 2;
+      const d = Math.abs(centerX - pc);
+      const minH = (size + p.size) / 2 * 0.85;
+      if (d < minH) {
+        const cand = p.top - size + Math.min(size, p.size) * 0.18;
+        if (cand < y) y = cand;
+      }
+    }
+    return y;
+  }
+
+  function pickGroundPlacement(size) {
+    const m = groundMetrics();
+    const cands = [];
+    for (let i = 0; i < 30; i++) {
+      const side = Math.random() < 0.5 ? -1 : 1;
+      let centerX;
+      const t = Math.pow(Math.random(), 1.7);   // bias toward the jar wall (pile leans on it)
+      if (side < 0) {
+        const near = m.leftWall - 4, far = size / 2 + 6;
+        centerX = near - t * (near - far);
+      } else {
+        const near = m.rightWall + 4, far = m.gw - size / 2 - 6;
+        centerX = near + t * (far - near);
+      }
+      const left = centerX - size / 2;
+      if (left < 2 || left + size > m.gw - 2) continue;
+      const top = findGroundStackY(centerX, size, m.floorY);
+      cands.push({ left, top, size });
+    }
+    if (!cands.length) return { left: 6, top: m.floorY - size, size };
+    cands.sort((a, b) => b.top - a.top);          // floor fills before climbing
+    const pickFrom = Math.min(6, cands.length);
+    const r = Math.pow(Math.random(), 2.0);
+    return cands[Math.floor(r * pickFrom)];
   }
 
   function spawnGift(gift, w, h, silent = false) {
     const s = styleFor(gift.giftType || gift.giftName);
     const el = document.createElement('div');
-    el.className = 'gift ' + (silent ? '' : 'falling ') +
+    el.className = 'gift ' +
                    pickComboClass(gift.repeatCount) + ' ' + pickTierClass(gift.diamondCount || 0);
     if (gift.giftPictureUrl) {
       el.classList.add('has-image');
@@ -818,13 +908,24 @@
       el.style.height = (baseH * extraScale) + 'px';
     }
 
+    // Append to the jar first so offsetWidth measures the real (post-CSS) size,
+    // then route to the floor if the jar is full.
+    jarContent.appendChild(el);
     const size = el.offsetWidth || 56;
-    const placement = pickPlacement(size);
-    const left = placement.left;
-    const landY = placement.top;
+    const pick = pickPlacement(size);
+
+    if (!pick.full) {
+      placeInside(el, size, pick.placement, silent);
+    } else {
+      groundContent.appendChild(el);   // move out of the jar
+      placeOnGround(el, size, silent);
+    }
+  }
+
+  function placeInside(el, size, placement, silent) {
+    const left = placement.left, landY = placement.top;
     const startR = (-20 + Math.random() * 40);
     const landR  = (-12 + Math.random() * 24) * 0.4;
-
     el.style.left = left + 'px';
     el.style.top = '0px';
     el.style.setProperty('--land-y', landY + 'px');
@@ -834,36 +935,66 @@
 
     if (silent) {
       el.style.transform = `translateY(${landY}px) rotate(${landR}deg)`;
-    }
-
-    jarContent.appendChild(el);
-
-    const placementRec = { left, top: landY, size, element: el };
-    placedGifts.push(placementRec);
-
-    if (!silent) {
+    } else {
+      el.classList.add('falling');
       el.addEventListener('animationend', () => {
         el.style.transform = `translateY(${landY}px) rotate(${landR}deg)`;
         el.classList.remove('falling');
-        spawnPuff(left + size / 2, landY + size);
+        spawnPuff(jarContent, left + size / 2, landY + size);
       }, { once: true });
     }
 
-    const MAX = 80;
+    placedGifts.push({ left, top: landY, size, element: el });
+    const MAX = 90;
     while (placedGifts.length > MAX) {
       const oldest = placedGifts.shift();
       try { oldest.element?.remove(); } catch {}
     }
-    while (jarContent.childElementCount > MAX) jarContent.firstElementChild.remove();
   }
 
-  // Soft landing puff at the gift's base
-  function spawnPuff(cx, cy) {
+  function placeOnGround(el, size, silent) {
+    const m = groundMetrics();
+    const p = pickGroundPlacement(size);
+    const left = p.left, landY = p.top;
+    const startR = (-24 + Math.random() * 48);
+    const landR  = (-16 + Math.random() * 32) * 0.5;
+    // arc out: emerge near the jar mouth, fall to the side
+    const startDX = (m.jarCenter - (left + size / 2));
+    el.style.left = left + 'px';
+    el.style.top = '0px';
+    el.style.setProperty('--start-dx', startDX + 'px');
+    el.style.setProperty('--mouth-y', '150px');
+    el.style.setProperty('--land-y', landY + 'px');
+    el.style.setProperty('--start-r', startR + 'deg');
+    el.style.setProperty('--land-r', landR + 'deg');
+    el.style.setProperty('--fall-dur', (1.1 + Math.random() * 0.5) + 's');
+
+    if (silent) {
+      el.style.transform = `translateY(${landY}px) rotate(${landR}deg)`;
+    } else {
+      el.classList.add('falling-out');
+      el.addEventListener('animationend', () => {
+        el.style.transform = `translateY(${landY}px) rotate(${landR}deg)`;
+        el.classList.remove('falling-out');
+        spawnPuff(groundContent, left + size / 2, landY + size);
+      }, { once: true });
+    }
+
+    groundGifts.push({ left, top: landY, size, element: el });
+    const MAXG = 70;
+    while (groundGifts.length > MAXG) {
+      const oldest = groundGifts.shift();
+      try { oldest.element?.remove(); } catch {}
+    }
+  }
+
+  // Soft landing puff at the gift's base, inside the given layer
+  function spawnPuff(layer, cx, cy) {
     const p = document.createElement('div');
     p.className = 'puff';
     p.style.left = cx + 'px';
     p.style.top = cy + 'px';
-    jarContent.appendChild(p);
+    layer.appendChild(p);
     setTimeout(() => p.remove(), 520);
   }
 
@@ -930,6 +1061,8 @@
   function onClear() {
     jarContent.innerHTML = '';
     placedGifts = [];
+    groundContent.innerHTML = '';
+    groundGifts = [];
     giftTotal = 0; diamondTotal = 0;
     countEl.textContent = '0';
     diamondEl.textContent = '0';
